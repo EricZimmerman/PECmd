@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -58,7 +59,7 @@ namespace PECmd
 
             p.Setup(arg => arg.File)
               .As('f')
-              .WithDescription("File to search. Either this or -d is required");
+              .WithDescription("File to process. Either this or -d is required");
 
             p.Setup(arg => arg.Directory)
                 .As('d')
@@ -192,6 +193,16 @@ namespace PECmd
             }
         }
 
+
+        public static string GetDescriptionFromEnumValue(Enum value)
+        {
+            var attribute = value.GetType()
+                .GetField(value.ToString())
+                .GetCustomAttributes(typeof(DescriptionAttribute), false)
+                .SingleOrDefault() as DescriptionAttribute;
+            return attribute == null ? value.ToString() : attribute.Description;
+        }
+
         private static IPrefetch LoadFile(string pfFile)
         {
             _logger.Warn($"Processing '{pfFile}'");
@@ -211,13 +222,17 @@ namespace PECmd
 
                 _logger.Info($"Executable name: {pf.Header.ExecutableFilename}");
                 _logger.Info($"Hash: {pf.Header.Hash}");
-                _logger.Info($"Version: {pf.Header.Version}");
+                _logger.Info($"Version: {GetDescriptionFromEnumValue( pf.Header.Version)}");
                 _logger.Info("");
 
                 _logger.Info($"Run count: {pf.RunCount:N0}");
                 _logger.Warn($"Last run: {pf.LastRunTimes.First()}");
-                _logger.Info($"Other run times: {string.Join(",", pf.LastRunTimes.Skip(1))}");
 
+                if (pf.LastRunTimes.Count > 1)
+                {
+                    _logger.Info($"Other run times: {string.Join(",", pf.LastRunTimes.Skip(1))}");
+                }
+                
                 _logger.Info("");
                 _logger.Info("Volume information:");
                 _logger.Info("");
