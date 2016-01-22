@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Management.Instrumentation;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +13,8 @@ using Microsoft.Win32;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Prefetch;
+
 
 namespace PECmd
 {
@@ -31,9 +35,13 @@ namespace PECmd
             }
         }
 
+        private static HashSet<string> _keywords;
+
         static void Main(string[] args)
         {
             SetupNLog();
+
+            _keywords = new HashSet<string> {"temp", "tmp"};
 
             _logger = LogManager.GetCurrentClassLogger();
 
@@ -56,17 +64,31 @@ namespace PECmd
                 .As('d')
                 .WithDescription("Directory to recursively process. Either this or -f is required");
 
+            p.Setup(arg => arg.Keywords)
+    .As('k')
+    .WithDescription("Comma separated list of keywords to highlight in output. By default, 'temp' and 'tmp' are highlighted. Any additional keywords will be added to these.");
+
+            p.Setup(arg => arg.JsonDirectory)
+                .As("json")
+                .WithDescription(
+                    "Directory to save json representation to. Use --pretty for a more human readable layout");
+
+            p.Setup(arg => arg.JsonPretty)
+                .As("pretty")
+                .WithDescription(
+                    "When exporting to json, use a more human readable layout").SetDefault(false);
+
             var header =
              $"PECmd version {Assembly.GetExecutingAssembly().GetName().Version}" +
              "\r\n\r\nAuthor: Eric Zimmerman (saericzimmerman@gmail.com)" +
              "\r\nhttps://github.com/EricZimmerman/PECmd";
 
             var footer = @"Examples: PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf""" + "\r\n\t " +
-//                         @" PECmd.exe -f ""C:\Temp\someFile.txt"" --lr guid" + "\r\n\t " +
-//                         @" PECmd.exe -d ""C:\Temp"" --ls test" + "\r\n\t " +
+                         @" PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf"" --json ""D:\jsonOutput"" --jsonpretty" + "\r\n\t " +
+                         @" PECmd.exe -d ""C:\Temp"" -k ""system32, fonts""" + "\r\n\t " +
 //                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa" + "\r\n\t " +
 //                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa -m 15 -x 22" + "\r\n\t " +
-                         @" PECmd.exe -d ""C:\Temp""" + "\r\n\t ";
+                         @" PECmd.exe -d ""C:\Windows\Prefetch""" + "\r\n\t ";
 
             p.SetupHelp("?", "help").WithHeader(header).Callback(text => _logger.Info(text + "\r\n" + footer));
 
@@ -107,12 +129,28 @@ namespace PECmd
                 return;
             }
 
+            if (p.Object.Keywords?.Length > 0)
+            {
+                var kws = p.Object.Keywords.Split(new[] { ',' },StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var kw in kws)
+                {
+                    _keywords.Add(kw.Trim());
+                }
+            }
+
+            _logger.Info(header);
+            _logger.Info("");
+            _logger.Info($"Keywords: {string.Join(", ",_keywords)}");
+            _logger.Info("");
+
             if (p.Object.File?.Length > 0)
             {
-
-                LoadFile(p.Object.File);
-
-
+              var pf=  LoadFile(p.Object.File);
+                if (pf != null && p.Object.JsonDirectory?.Length > 0)
+                {
+                    SaveJson(pf, p.Object.JsonPretty, p.Object.JsonDirectory);
+                }
             }
             else
             {
@@ -121,63 +159,110 @@ namespace PECmd
 
                 foreach (var file in Directory.GetFiles(p.Object.Directory,"*.pf",SearchOption.AllDirectories))
                 {
-                    LoadFile(file);
+                    var pf = LoadFile(file);
+
+                    if (pf != null && p.Object.JsonDirectory?.Length > 0)
+                    {
+                        SaveJson(pf, p.Object.JsonPretty, p.Object.JsonDirectory);
+                    }
                 }
             }
         }
 
-        private static void LoadFile(string pfFile)
+        private static void SaveJson(IPrefetch pf, bool pretty, string outDir)
+        {
+            if (Directory.Exists(outDir) == false)
+            {
+                Directory.CreateDirectory(outDir);
+            }
+
+            var outName = $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_{Path.GetFileName(pf.SourceFilename)}.json";
+            var outFile = Path.Combine(outDir, outName);
+
+            _logger.Info("");
+            _logger.Info($"Saving json output to '{outFile}'");
+
+            try
+            {
+                PrefetchFile.DumpToJson(pf, pretty, outFile);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error exporting json. Error: {ex.Message}");
+            }
+        }
+
+        private static IPrefetch LoadFile(string pfFile)
         {
             _logger.Warn($"Processing '{pfFile}'");
             _logger.Info("");
 
             try
             {
-                //TODO make these have max length based on length of each count
-                string dirFormat = "0000.##";
-                string fileFormat = "0000.##";
+                var pf = PrefetchFile.Open(pfFile);
 
-                var pf = Prefetch.Prefetch.Open(pfFile);
+                var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
+                var dd = new string('0', dirString.Length);
+                var dirFormat = $"{dd}.##";
+
+                var fString = pf.FileMetricsCount.ToString(CultureInfo.InvariantCulture);
+                var ff = new string('0', fString.Length);
+                var fileFormat = $"{ff}.##";
 
                 _logger.Info($"Executable name: {pf.Header.ExecutableFilename}");
                 _logger.Info($"Hash: {pf.Header.Hash}");
                 _logger.Info($"Version: {pf.Header.Version}");
                 _logger.Info("");
 
-                _logger.Info($"Run count: {pf.RunCount}");
+                _logger.Info($"Run count: {pf.RunCount:N0}");
                 _logger.Warn($"Last run: {pf.LastRunTimes.First()}");
                 _logger.Info($"Other run times: {string.Join(",", pf.LastRunTimes.Skip(1))}");
 
                 _logger.Info("");
-                _logger.Info("Volume info:");
+                _logger.Info("Volume information:");
                 _logger.Info("");
                 var volnum = 0;
                 foreach (var volumeInfo in pf.VolumeInformation)
                 {
-                    _logger.Info($"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {volumeInfo.CreationTime} Directories: {volumeInfo.DirectoryNames.Count} File references: {volumeInfo.FileReferences.Count}");
+                    _logger.Info(
+                        $"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {volumeInfo.CreationTime} Directories: {volumeInfo.DirectoryNames.Count:N0} File references: {volumeInfo.FileReferences.Count:N0}");
                     volnum += 1;
                 }
                 _logger.Info("");
 
-                _logger.Info($"Directories referenced: {pf.TotalDirectoryCount}");
+                _logger.Info($"Directories referenced: {pf.TotalDirectoryCount:N0}");
                 _logger.Info("");
                 var dirIndex = 0;
                 foreach (var volumeInfo in pf.VolumeInformation)
                 {
+
                     foreach (var directoryName in volumeInfo.DirectoryNames)
                     {
-                        _logger.Info($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                        var found = false;
+                        foreach (var keyword in _keywords)
+                        {
+                            if (directoryName.ToLower().Contains(keyword))
+                            {
+                                _logger.Fatal($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            _logger.Info($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                        }
+
                         dirIndex += 1;
                     }
                 }
 
                 _logger.Info("");
 
-                _logger.Info($"Files referenced: {pf.Filenames.Count}");
+                _logger.Info($"Files referenced: {pf.Filenames.Count:N0}");
                 _logger.Info("");
                 var fileIndex = 0;
-
-                
 
                 foreach (var filename in pf.Filenames)
                 {
@@ -187,19 +272,39 @@ namespace PECmd
                     }
                     else
                     {
-                        _logger.Info($"{fileIndex.ToString(fileFormat)}: {filename}");
+                        var found = false;
+                        foreach (var keyword in _keywords)
+                        {
+                            if (filename.ToLower().Contains(keyword))
+                            {
+                                _logger.Fatal($"{fileIndex.ToString(fileFormat)}: {filename}");
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            _logger.Info($"{fileIndex.ToString(fileFormat)}: {filename}");
+                        }
                     }
                     fileIndex += 1;
                 }
 
                 _logger.Info("---------------------------------------------------------");
 
-                
+                return pf;
+            }
+            catch (ArgumentNullException)
+            {
+                _logger.Error($"Error opening '{pfFile}'.\r\n\r\nThis appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files");
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error opening '{pfFile}'. Message: {ex.Message}");
             }
+
+            return null;
         }
 
         private static void SetupNLog()
@@ -226,6 +331,12 @@ namespace PECmd
     {
         public string File { get; set; }
         public string Directory { get; set; }
+
+        public string Keywords { get; set; }
+
+        public string JsonDirectory { get; set; }
+        public bool JsonPretty { get; set; }
+
 //        public string SaveTo { get; set; } = string.Empty;
 //        public bool GetAscii { get; set; } = true;
 //        public bool GetUnicode { get; set; } = true;
