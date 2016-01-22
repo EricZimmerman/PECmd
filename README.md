@@ -14,4 +14,8 @@ Prefetch Explorer Command Line
     
     Examples: PECmd.exe -f "C:\Temp\CALC.EXE-3FBEF7FD.pf"
     PECmd.exe -f "C:\Temp\CALC.EXE-3FBEF7FD.pf" --json "D:\jsonOutput" --jsonpretty
+    PECmd.exe -f "C:\Temp\CALC.EXE-3FBEF7FD.pf" -k "system32, fonts"
     PECmd.exe -d "C:\Windows\Prefetch"
+
+
+# Note: If you are running less than Windows 8 you will NOT be able to process Windows 10 prefetch files.
