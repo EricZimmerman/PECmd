@@ -1,3 +1,1 @@
 - detect OS and warn if less than Windows 8 Re: Windows 10 files
-- --utc switch
-- csv output
