@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using CsvHelper;
+using CsvHelper.Configuration;
 using Fclp;
 using Fclp.Internals.Extensions;
 using Microsoft.Win32;
@@ -74,7 +76,7 @@ namespace PECmd
                 .WithDescription(
                     "Directory to save json representation to. Use --pretty for a more human readable layout");
 
-            _fluentCommandLineParser.Setup(arg => arg.CsvDirectory)
+            _fluentCommandLineParser.Setup(arg => arg.CsvFile)
                 .As("csv")
                 .WithDescription(
                     "File to save CSV (tab separated) results to. Be sure to include the full path in double quotes");
@@ -88,6 +90,11 @@ namespace PECmd
                 .As("local")
                 .WithDescription(
                     "Display dates using timezone of machine PECmd is running on vs. UTC").SetDefault(false);
+
+            _fluentCommandLineParser.Setup(arg => arg.Quiet)
+              .As('q')
+              .WithDescription(
+                  "Do not dump full details about each file processed. Speeds up processing when using --json or --csv").SetDefault(false);
 
             var header =
                 $"PECmd version {Assembly.GetExecutingAssembly().GetName().Version}" +
@@ -158,20 +165,20 @@ namespace PECmd
                 }
             }
 
-            if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
+            if (_fluentCommandLineParser.Object.CsvFile?.Length > 0)
             {
-                var dirName = Path.GetDirectoryName(_fluentCommandLineParser.Object.CsvDirectory);
+                var dirName = Path.GetDirectoryName(_fluentCommandLineParser.Object.CsvFile);
 
                 if (dirName == null)
                 {
                     _logger.Warn(
-                        $"Couldn't determine directory for '{_fluentCommandLineParser.Object.CsvDirectory}'. Exiting...");
+                        $"Couldn't determine directory for '{_fluentCommandLineParser.Object.CsvFile}'. Exiting...");
                     return;
                 }
 
                 if (Directory.Exists(dirName) == false)
                 {
-                    _logger.Warn($"Path to '{_fluentCommandLineParser.Object.CsvDirectory}' doesn't exist. Creating...");
+                    _logger.Warn($"Path to '{_fluentCommandLineParser.Object.CsvFile}' doesn't exist. Creating...");
                     Directory.CreateDirectory(dirName);
                 }
             }
@@ -184,9 +191,23 @@ namespace PECmd
             _logger.Info($"Keywords: {string.Join(", ", _keywords)}");
             _logger.Info("");
 
+            CsvWriter _csv = null;
+
+            if (_fluentCommandLineParser.Object.CsvFile?.Length > 0)
+            {
+               _csv = new CsvWriter(new StreamWriter(_fluentCommandLineParser.Object.CsvFile));
+                _csv.Configuration.Delimiter = $"{'\t'}";
+                _csv.WriteHeader(typeof (CsvOut));
+            }
+
             if (_fluentCommandLineParser.Object.File?.Length > 0)
             {
-                LoadFile(_fluentCommandLineParser.Object.File);
+               var pf= LoadFile(_fluentCommandLineParser.Object.File);
+                if (pf != null && _csv != null)
+                {
+                    var o = GetCsvFormat(pf);
+                    _csv.WriteRecord(o);
+                }
             }
             else
             {
@@ -203,39 +224,132 @@ namespace PECmd
 
                 foreach (var file in pfFiles)
                 {
-                    LoadFile(file);
+                    var pf = LoadFile(file);
+                    if (pf != null && _csv != null)
+                    {
+                        var o = GetCsvFormat(pf);
+                        _csv.WriteRecord(o);
+                    }
                 }
 
                 sw.Stop();
-                _logger.Info($"Processing completed in {sw.Elapsed.TotalSeconds:N4} seconds");
+                _logger.Info($"Processed {pfFiles.Length:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
+
+                
             }
         }
 
-        private string GetCsvFormat(IPrefetch pf)
+        private static CsvOut GetCsvFormat(IPrefetch pf)
         {
-            var sb = new StringBuilder();
-            //todo get csv helper or something here to build this intelligently
+            var csOut = new CsvOut
+            {
+                SourceFilename = pf.SourceFilename,
+                SourceCreated = pf.SourceCreatedOn,
+                SourceModified = pf.SourceModifiedOn,
+                SourceAccessed = pf.SourceAccessedOn,
+                Hash = pf.Header.Hash,
+                ExecutableName = pf.Header.ExecutableFilename,
+                Size = pf.Header.FileSize,
+                Version = GetDescriptionFromEnumValue(pf.Header.Version),
+                RunCount = pf.RunCount,
+                Volume0Created = pf.VolumeInformation[0].CreationTime,
+                Volume0Name = pf.VolumeInformation[0].DeviceName,
+                Volume0Serial = pf.VolumeInformation[0].SerialNumber,
+                LastRun = pf.LastRunTimes[0],
+            };
 
-            //source file name
-            //Source created, mod, access
-            //TODO one line per for modified, accessed, created of source file?
-            //exe name
-            //hash
-            //size
-            //Version
-            //Run count
-            //last run
+            if (pf.LastRunTimes.Count > 1)
+            {
+                csOut.PreviousRun0 = pf.LastRunTimes[1];
+            }
 
-            //TODO do i return ONE row for each time it was run, or have a column "Other run times" with the remaining times in them?
+            if (pf.LastRunTimes.Count > 2)
+            {
+                csOut.PreviousRun1 = pf.LastRunTimes[2];
+            }
 
-            //TODO how to represent volumes? separate fields, or comma separated? same with vol times, etc
+            if (pf.LastRunTimes.Count > 3)
+            {
+                csOut.PreviousRun2 = pf.LastRunTimes[3];
+            }
 
-            //comma separated list of dirs
-            //comma separated list of files
+            if (pf.LastRunTimes.Count > 4)
+            {
+                csOut.PreviousRun3 = pf.LastRunTimes[4];
+            }
 
-            //do stuff here
+            if (pf.LastRunTimes.Count > 5)
+            {
+                csOut.PreviousRun4 = pf.LastRunTimes[5];
+            }
 
-            return sb.ToString();
+            if (pf.LastRunTimes.Count > 6)
+            {
+                csOut.PreviousRun5 = pf.LastRunTimes[6];
+            }
+
+            if (pf.LastRunTimes.Count > 7)
+            {
+                csOut.PreviousRun6 = pf.LastRunTimes[7];
+            }
+
+            if (pf.VolumeCount > 1)
+            {
+                csOut.Volume1Created = pf.VolumeInformation[1].CreationTime;
+                csOut.Volume1Name = pf.VolumeInformation[1].DeviceName;
+                csOut.Volume1Serial = pf.VolumeInformation[1].SerialNumber;
+            }
+
+            if (pf.VolumeCount > 2)
+            {
+                csOut.Note = "File contains > 2 volumes! Please inspect output from main program for full details!";
+            }
+
+            var sbDirs = new StringBuilder();
+            foreach (var volumeInfo in pf.VolumeInformation)
+            {
+                sbDirs.Append(string.Join(", ", volumeInfo.DirectoryNames));
+            }
+
+            csOut.Directories = sbDirs.ToString();
+
+            csOut.FilesLoaded = string.Join(", ", pf.Filenames);
+
+            return csOut;
+        }
+
+        public sealed class CsvOut
+        {
+            public string Note { get; set; }
+            public string SourceFilename { get; set; }
+            public DateTimeOffset SourceCreated { get; set; }
+            public DateTimeOffset SourceModified { get; set; }
+            public DateTimeOffset SourceAccessed { get; set; }
+            public string ExecutableName { get; set; }
+            public string Hash { get; set; }
+            public int Size { get; set; }
+            public string Version { get; set; }
+            public int RunCount { get; set; }
+
+            public DateTimeOffset LastRun { get; set; }
+            public DateTimeOffset? PreviousRun0 { get; set; }
+            public DateTimeOffset? PreviousRun1 { get; set; }
+            public DateTimeOffset? PreviousRun2 { get; set; }
+            public DateTimeOffset? PreviousRun3 { get; set; }
+            public DateTimeOffset? PreviousRun4 { get; set; }
+            public DateTimeOffset? PreviousRun5 { get; set; }
+            public DateTimeOffset? PreviousRun6 { get; set; }
+
+            public string Volume0Name { get; set; }
+            public string Volume0Serial { get; set; }
+            public DateTimeOffset Volume0Created { get; set; }
+
+            public string Volume1Name { get; set; }
+            public string Volume1Serial { get; set; }
+            public DateTimeOffset? Volume1Created { get; set; }
+
+            public string Directories { get; set; }
+            public string FilesLoaded { get; set; }
         }
 
         private static void SaveJson(IPrefetch pf, bool pretty, string outDir)
@@ -276,30 +390,27 @@ namespace PECmd
             _logger.Warn($"Processing '{pfFile}'");
             _logger.Info("");
 
-            //TODO REFACTOR TO Prefetch project
-            var fi = new FileInfo(pfFile);
-            var created = _fluentCommandLineParser.Object.LocalTime
-                ? new DateTimeOffset(fi.CreationTime)
-                : new DateTimeOffset(fi.CreationTimeUtc);
-            var modified = _fluentCommandLineParser.Object.LocalTime
-                ? new DateTimeOffset(fi.LastWriteTime)
-                : new DateTimeOffset(fi.LastWriteTimeUtc);
-            var accessed = _fluentCommandLineParser.Object.LocalTime
-                ? new DateTimeOffset(fi.LastAccessTime)
-                : new DateTimeOffset(fi.LastAccessTimeUtc);
-
-            _logger.Info($"Created on: {created}");
-            _logger.Info($"Modified on: {modified}");
-            _logger.Info($"Last accessed on: {accessed}");
-
-            _logger.Info("");
-
             var sw = new Stopwatch();
             sw.Start();
 
             try
             {
                 var pf = PrefetchFile.Open(pfFile);
+
+                var created = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.SourceCreatedOn.ToLocalTime()
+                    : pf.SourceCreatedOn;
+                var modified = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.SourceModifiedOn.ToLocalTime()
+                    : pf.SourceModifiedOn;
+                var accessed = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.SourceAccessedOn.ToLocalTime()
+                    : pf.SourceAccessedOn;
+
+                _logger.Info($"Created on: {created}");
+                _logger.Info($"Modified on: {modified}");
+                _logger.Info($"Last accessed on: {accessed}");
+                _logger.Info("");
 
                 var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
                 var dd = new string('0', dirString.Length);
@@ -314,8 +425,6 @@ namespace PECmd
                 _logger.Info($"File size (bytes): {pf.Header.FileSize:N0}");
                 _logger.Info($"Version: {GetDescriptionFromEnumValue(pf.Header.Version)}");
                 _logger.Info("");
-
-         
 
                 _logger.Info($"Run count: {pf.RunCount:N0}");
 
@@ -343,7 +452,10 @@ namespace PECmd
                     _logger.Info($"Other run times: {otherRunTimes}");
                 }
 
-                _logger.Info("");
+                if (_fluentCommandLineParser.Object.Quiet == false)
+                {
+                    
+            _logger.Info("");
                 _logger.Info("Volume information:");
                 _logger.Info("");
                 var volnum = 0;
@@ -419,6 +531,9 @@ namespace PECmd
                     }
                     fileIndex += 1;
                 }
+                }
+
+
 
                 sw.Stop();
 
@@ -430,7 +545,7 @@ namespace PECmd
 
                 _logger.Info("");
                 _logger.Info(
-                    $"-------------------------------------------- Processed '{pf.SourceFilename}' in {sw.Elapsed.TotalSeconds:N4} seconds --------------------------------------------");
+                    $"-------------------------------- Processed '{pf.SourceFilename}' in {sw.Elapsed.TotalSeconds:N4} seconds --------------------------------");
                 _logger.Info("\r\n");
                 return pf;
             }
@@ -478,6 +593,7 @@ namespace PECmd
         public string JsonDirectory { get; set; }
         public bool JsonPretty { get; set; }
         public bool LocalTime { get; set; }
-        public string CsvDirectory { get; set; }
+        public string CsvFile { get; set; }
+        public bool Quiet { get; set; }
     }
 }
