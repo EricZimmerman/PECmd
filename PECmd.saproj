@@ -231,6 +231,10 @@
             <Assembly AssemblyName="SmartAssembly.AssemblyResolver, Culture=neutral, PublicKeyToken=7f465a1c156d4d57">
                 <Merging />
             </Assembly>
+            <Assembly AssemblyName="CsvHelper, Culture=neutral, PublicKeyToken=8c4959082be5c823">
+                <Merging />
+                <Embedding Embed="1" />
+            </Assembly>
         </Assemblies>
     </Configuration>
 </SmartAssemblyProject>
