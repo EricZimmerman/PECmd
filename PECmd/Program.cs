@@ -203,7 +203,23 @@ namespace PECmd
 
             if (_fluentCommandLineParser.Object.File?.Length > 0)
             {
-                var pf = LoadFile(_fluentCommandLineParser.Object.File);
+                IPrefetch pf = null;
+
+                try
+                {
+                    pf = LoadFile(_fluentCommandLineParser.Object.File);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.Error($"Unable to access '{_fluentCommandLineParser.Object.File}'. Are you running as an administrator?");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
+                    return;
+                }
+
                 if (pf != null && _csv != null)
                 {
                     var o = GetCsvFormat(pf);
@@ -215,9 +231,24 @@ namespace PECmd
                 _logger.Info($"Looking for prefetch files in '{_fluentCommandLineParser.Object.Directory}'");
                 _logger.Info("");
 
-                var pfFiles = Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",
-                    SearchOption.AllDirectories);
+                string[] pfFiles = null;
 
+                try
+                {
+                    pfFiles = Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",
+                    SearchOption.AllDirectories);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    _logger.Error($"Unable to access '{_fluentCommandLineParser.Object.Directory}'. Are you running as an administrator?");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
+                    return;
+                }
+                
                 _logger.Info($"Found {pfFiles.Length} Prefetch files");
                 _logger.Info("");
 
