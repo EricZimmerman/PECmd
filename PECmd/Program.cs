@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using CsvHelper;
-using CsvHelper.Configuration;
 using Fclp;
 using Fclp.Internals.Extensions;
 using Microsoft.Win32;
@@ -16,6 +15,7 @@ using NLog;
 using NLog.Config;
 using NLog.Targets;
 using Prefetch;
+using Version = Prefetch.Version;
 
 namespace PECmd
 {
@@ -92,9 +92,10 @@ namespace PECmd
                     "Display dates using timezone of machine PECmd is running on vs. UTC").SetDefault(false);
 
             _fluentCommandLineParser.Setup(arg => arg.Quiet)
-              .As('q')
-              .WithDescription(
-                  "Do not dump full details about each file processed. Speeds up processing when using --json or --csv").SetDefault(false);
+                .As('q')
+                .WithDescription(
+                    "Do not dump full details about each file processed. Speeds up processing when using --json or --csv")
+                .SetDefault(false);
 
             var header =
                 $"PECmd version {Assembly.GetExecutingAssembly().GetName().Version}" +
@@ -186,7 +187,7 @@ namespace PECmd
 
             _logger.Info(header);
             _logger.Info("");
-            _logger.Info($"Command line: {string.Join(" ",Environment.GetCommandLineArgs().Skip(1))}");
+            _logger.Info($"Command line: {string.Join(" ", Environment.GetCommandLineArgs().Skip(1))}");
             _logger.Info("");
             _logger.Info($"Keywords: {string.Join(", ", _keywords)}");
             _logger.Info("");
@@ -195,14 +196,14 @@ namespace PECmd
 
             if (_fluentCommandLineParser.Object.CsvFile?.Length > 0)
             {
-               _csv = new CsvWriter(new StreamWriter(_fluentCommandLineParser.Object.CsvFile));
+                _csv = new CsvWriter(new StreamWriter(_fluentCommandLineParser.Object.CsvFile));
                 _csv.Configuration.Delimiter = $"{'\t'}";
                 _csv.WriteHeader(typeof (CsvOut));
             }
 
             if (_fluentCommandLineParser.Object.File?.Length > 0)
             {
-               var pf= LoadFile(_fluentCommandLineParser.Object.File);
+                var pf = LoadFile(_fluentCommandLineParser.Object.File);
                 if (pf != null && _csv != null)
                 {
                     var o = GetCsvFormat(pf);
@@ -217,7 +218,8 @@ namespace PECmd
                 var pfFiles = Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",
                     SearchOption.AllDirectories);
 
-                _logger.Info($"Found '{pfFiles.Length}' Prefetch files");
+                _logger.Info($"Found {pfFiles.Length} Prefetch files");
+                _logger.Info("");
 
                 var sw = new Stopwatch();
                 sw.Start();
@@ -234,68 +236,108 @@ namespace PECmd
 
                 sw.Stop();
                 _logger.Info($"Processed {pfFiles.Length:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
-
-                
             }
         }
 
         private static CsvOut GetCsvFormat(IPrefetch pf)
         {
+            var created = _fluentCommandLineParser.Object.LocalTime
+                ? pf.SourceCreatedOn.ToLocalTime()
+                : pf.SourceCreatedOn;
+            var modified = _fluentCommandLineParser.Object.LocalTime
+                ? pf.SourceModifiedOn.ToLocalTime()
+                : pf.SourceModifiedOn;
+            var accessed = _fluentCommandLineParser.Object.LocalTime
+                ? pf.SourceAccessedOn.ToLocalTime()
+                : pf.SourceAccessedOn;
+
+            var vol0Create = _fluentCommandLineParser.Object.LocalTime
+                ? pf.VolumeInformation[0].CreationTime.ToLocalTime()
+                : pf.VolumeInformation[0].CreationTime;
+
+            var lr = _fluentCommandLineParser.Object.LocalTime
+            ? pf.LastRunTimes[0].ToLocalTime()
+            : pf.LastRunTimes[0];
+
             var csOut = new CsvOut
             {
                 SourceFilename = pf.SourceFilename,
-                SourceCreated = pf.SourceCreatedOn,
-                SourceModified = pf.SourceModifiedOn,
-                SourceAccessed = pf.SourceAccessedOn,
+                SourceCreated = created,
+                SourceModified = modified,
+                SourceAccessed = accessed,
                 Hash = pf.Header.Hash,
                 ExecutableName = pf.Header.ExecutableFilename,
                 Size = pf.Header.FileSize,
                 Version = GetDescriptionFromEnumValue(pf.Header.Version),
                 RunCount = pf.RunCount,
-                Volume0Created = pf.VolumeInformation[0].CreationTime,
+                Volume0Created = vol0Create,
                 Volume0Name = pf.VolumeInformation[0].DeviceName,
                 Volume0Serial = pf.VolumeInformation[0].SerialNumber,
-                LastRun = pf.LastRunTimes[0],
+                LastRun = lr
             };
 
             if (pf.LastRunTimes.Count > 1)
             {
-                csOut.PreviousRun0 = pf.LastRunTimes[1];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[1].ToLocalTime()
+                    : pf.LastRunTimes[1];
+                csOut.PreviousRun0 = lrt;
             }
 
             if (pf.LastRunTimes.Count > 2)
             {
-                csOut.PreviousRun1 = pf.LastRunTimes[2];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[2].ToLocalTime()
+                    : pf.LastRunTimes[2];
+                csOut.PreviousRun1 = lrt;
             }
 
             if (pf.LastRunTimes.Count > 3)
             {
-                csOut.PreviousRun2 = pf.LastRunTimes[3];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[3].ToLocalTime()
+                    : pf.LastRunTimes[3];
+                csOut.PreviousRun2 = lrt;
             }
 
             if (pf.LastRunTimes.Count > 4)
             {
-                csOut.PreviousRun3 = pf.LastRunTimes[4];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[4].ToLocalTime()
+                    : pf.LastRunTimes[4];
+                csOut.PreviousRun3 = lrt;
             }
 
             if (pf.LastRunTimes.Count > 5)
             {
-                csOut.PreviousRun4 = pf.LastRunTimes[5];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[5].ToLocalTime()
+                    : pf.LastRunTimes[5];
+                csOut.PreviousRun4 = lrt;
             }
 
             if (pf.LastRunTimes.Count > 6)
             {
-                csOut.PreviousRun5 = pf.LastRunTimes[6];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[6].ToLocalTime()
+                    : pf.LastRunTimes[6];
+                csOut.PreviousRun5 = lrt;
             }
 
             if (pf.LastRunTimes.Count > 7)
             {
-                csOut.PreviousRun6 = pf.LastRunTimes[7];
+                var lrt = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.LastRunTimes[7].ToLocalTime()
+                    : pf.LastRunTimes[7];
+                csOut.PreviousRun6 = lrt;
             }
 
             if (pf.VolumeCount > 1)
             {
-                csOut.Volume1Created = pf.VolumeInformation[1].CreationTime;
+                var vol1 = _fluentCommandLineParser.Object.LocalTime
+                    ? pf.VolumeInformation[1].CreationTime.ToLocalTime()
+                    : pf.VolumeInformation[1].CreationTime;
+                csOut.Volume1Created = vol1;
                 csOut.Volume1Name = pf.VolumeInformation[1].DeviceName;
                 csOut.Volume1Serial = pf.VolumeInformation[1].SerialNumber;
             }
@@ -316,40 +358,6 @@ namespace PECmd
             csOut.FilesLoaded = string.Join(", ", pf.Filenames);
 
             return csOut;
-        }
-
-        public sealed class CsvOut
-        {
-            public string Note { get; set; }
-            public string SourceFilename { get; set; }
-            public DateTimeOffset SourceCreated { get; set; }
-            public DateTimeOffset SourceModified { get; set; }
-            public DateTimeOffset SourceAccessed { get; set; }
-            public string ExecutableName { get; set; }
-            public string Hash { get; set; }
-            public int Size { get; set; }
-            public string Version { get; set; }
-            public int RunCount { get; set; }
-
-            public DateTimeOffset LastRun { get; set; }
-            public DateTimeOffset? PreviousRun0 { get; set; }
-            public DateTimeOffset? PreviousRun1 { get; set; }
-            public DateTimeOffset? PreviousRun2 { get; set; }
-            public DateTimeOffset? PreviousRun3 { get; set; }
-            public DateTimeOffset? PreviousRun4 { get; set; }
-            public DateTimeOffset? PreviousRun5 { get; set; }
-            public DateTimeOffset? PreviousRun6 { get; set; }
-
-            public string Volume0Name { get; set; }
-            public string Volume0Serial { get; set; }
-            public DateTimeOffset Volume0Created { get; set; }
-
-            public string Volume1Name { get; set; }
-            public string Volume1Serial { get; set; }
-            public DateTimeOffset? Volume1Created { get; set; }
-
-            public string Directories { get; set; }
-            public string FilesLoaded { get; set; }
         }
 
         private static void SaveJson(IPrefetch pf, bool pretty, string outDir)
@@ -454,85 +462,95 @@ namespace PECmd
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
                 {
-                    
-            _logger.Info("");
-                _logger.Info("Volume information:");
-                _logger.Info("");
-                var volnum = 0;
-                foreach (var volumeInfo in pf.VolumeInformation)
-                {
-                    var localCreate = volumeInfo.CreationTime;
-                    if (_fluentCommandLineParser.Object.LocalTime)
+                    _logger.Info("");
+                    _logger.Info("Volume information:");
+                    _logger.Info("");
+                    var volnum = 0;
+                    foreach (var volumeInfo in pf.VolumeInformation)
                     {
-                        localCreate = localCreate.ToLocalTime();
-                    }
-                    _logger.Info(
-                        $"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {localCreate} Directories: {volumeInfo.DirectoryNames.Count:N0} File references: {volumeInfo.FileReferences.Count:N0}");
-                    volnum += 1;
-                }
-                _logger.Info("");
-
-                _logger.Info($"Directories referenced: {pf.TotalDirectoryCount:N0}");
-                _logger.Info("");
-                var dirIndex = 0;
-                foreach (var volumeInfo in pf.VolumeInformation)
-                {
-                    foreach (var directoryName in volumeInfo.DirectoryNames)
-                    {
-                        var found = false;
-                        foreach (var keyword in _keywords)
+                        var localCreate = volumeInfo.CreationTime;
+                        if (_fluentCommandLineParser.Object.LocalTime)
                         {
-                            if (directoryName.ToLower().Contains(keyword))
+                            localCreate = localCreate.ToLocalTime();
+                        }
+                        _logger.Info(
+                            $"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {localCreate} Directories: {volumeInfo.DirectoryNames.Count:N0} File references: {volumeInfo.FileReferences.Count:N0}");
+                        volnum += 1;
+                    }
+                    _logger.Info("");
+
+                    var totalDirs = pf.TotalDirectoryCount;
+                    if (pf.Header.Version == Version.WinXpOrWin2K3)
+                    {
+                        totalDirs = 0;
+                        //this has -1 for total directories, so we have to calculate it
+                        foreach (var volumeInfo in pf.VolumeInformation)
+                        {
+                            totalDirs += volumeInfo.DirectoryNames.Count;
+
+                        }
+                    }
+
+                    _logger.Info($"Directories referenced: {totalDirs:N0}");
+                    _logger.Info("");
+                    var dirIndex = 0;
+                    foreach (var volumeInfo in pf.VolumeInformation)
+                    {
+                        foreach (var directoryName in volumeInfo.DirectoryNames)
+                        {
+                            var found = false;
+                            foreach (var keyword in _keywords)
                             {
-                                _logger.Fatal($"{dirIndex.ToString(dirFormat)}: {directoryName}");
-                                found = true;
-                                break;
+                                if (directoryName.ToLower().Contains(keyword))
+                                {
+                                    _logger.Fatal($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!found)
+                            {
+                                _logger.Info($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                            }
+
+                            dirIndex += 1;
+                        }
+                    }
+
+                    _logger.Info("");
+
+                    _logger.Info($"Files referenced: {pf.Filenames.Count:N0}");
+                    _logger.Info("");
+                    var fileIndex = 0;
+
+                    foreach (var filename in pf.Filenames)
+                    {
+                        if (filename.Contains(pf.Header.ExecutableFilename))
+                        {
+                            _logger.Error($"{fileIndex.ToString(fileFormat)}: {filename}");
+                        }
+                        else
+                        {
+                            var found = false;
+                            foreach (var keyword in _keywords)
+                            {
+                                if (filename.ToLower().Contains(keyword))
+                                {
+                                    _logger.Fatal($"{fileIndex.ToString(fileFormat)}: {filename}");
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!found)
+                            {
+                                _logger.Info($"{fileIndex.ToString(fileFormat)}: {filename}");
                             }
                         }
-
-                        if (!found)
-                        {
-                            _logger.Info($"{dirIndex.ToString(dirFormat)}: {directoryName}");
-                        }
-
-                        dirIndex += 1;
+                        fileIndex += 1;
                     }
                 }
-
-                _logger.Info("");
-
-                _logger.Info($"Files referenced: {pf.Filenames.Count:N0}");
-                _logger.Info("");
-                var fileIndex = 0;
-
-                foreach (var filename in pf.Filenames)
-                {
-                    if (filename.Contains(pf.Header.ExecutableFilename))
-                    {
-                        _logger.Error($"{fileIndex.ToString(fileFormat)}: {filename}");
-                    }
-                    else
-                    {
-                        var found = false;
-                        foreach (var keyword in _keywords)
-                        {
-                            if (filename.ToLower().Contains(keyword))
-                            {
-                                _logger.Fatal($"{fileIndex.ToString(fileFormat)}: {filename}");
-                                found = true;
-                                break;
-                            }
-                        }
-
-                        if (!found)
-                        {
-                            _logger.Info($"{fileIndex.ToString(fileFormat)}: {filename}");
-                        }
-                    }
-                    fileIndex += 1;
-                }
-                }
-
 
 
                 sw.Stop();
@@ -545,7 +563,7 @@ namespace PECmd
 
                 _logger.Info("");
                 _logger.Info(
-                    $"-------------------------------- Processed '{pf.SourceFilename}' in {sw.Elapsed.TotalSeconds:N4} seconds --------------------------------");
+                    $"---------- Processed '{pf.SourceFilename}' in {sw.Elapsed.TotalSeconds:N4} seconds ----------");
                 _logger.Info("\r\n");
                 return pf;
             }
@@ -560,7 +578,7 @@ namespace PECmd
                 _logger.Error($"Error opening '{pfFile}'. Message: {ex.Message}");
                 _logger.Info("");
             }
-         
+
 
             return null;
         }
@@ -582,6 +600,40 @@ namespace PECmd
             config.LoggingRules.Add(rule1);
 
             LogManager.Configuration = config;
+        }
+
+        public sealed class CsvOut
+        {
+            public string Note { get; set; }
+            public string SourceFilename { get; set; }
+            public DateTimeOffset SourceCreated { get; set; }
+            public DateTimeOffset SourceModified { get; set; }
+            public DateTimeOffset SourceAccessed { get; set; }
+            public string ExecutableName { get; set; }
+            public string Hash { get; set; }
+            public int Size { get; set; }
+            public string Version { get; set; }
+            public int RunCount { get; set; }
+
+            public DateTimeOffset LastRun { get; set; }
+            public DateTimeOffset? PreviousRun0 { get; set; }
+            public DateTimeOffset? PreviousRun1 { get; set; }
+            public DateTimeOffset? PreviousRun2 { get; set; }
+            public DateTimeOffset? PreviousRun3 { get; set; }
+            public DateTimeOffset? PreviousRun4 { get; set; }
+            public DateTimeOffset? PreviousRun5 { get; set; }
+            public DateTimeOffset? PreviousRun6 { get; set; }
+
+            public string Volume0Name { get; set; }
+            public string Volume0Serial { get; set; }
+            public DateTimeOffset Volume0Created { get; set; }
+
+            public string Volume1Name { get; set; }
+            public string Volume1Serial { get; set; }
+            public DateTimeOffset? Volume1Created { get; set; }
+
+            public string Directories { get; set; }
+            public string FilesLoaded { get; set; }
         }
     }
 
