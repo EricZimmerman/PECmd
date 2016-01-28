@@ -483,7 +483,7 @@ namespace PECmd
                     {
                         for (var i = 0; i < lastRuns.Count; i++)
                         {
-                            lastRuns[0] = lastRuns[0].ToLocalTime();
+                            lastRuns[i] = lastRuns[i].ToLocalTime();
                         }
                     }
                     var otherRunTimes = string.Join(", ", lastRuns);
