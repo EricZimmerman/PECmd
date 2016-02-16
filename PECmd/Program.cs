@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Xml;
-using CsvHelper;
 using Fclp;
 using Fclp.Internals.Extensions;
 using Microsoft.Win32;
@@ -34,6 +33,8 @@ namespace PECmd
 
         private static List<string> _failedFiles;
 
+        private static List<IPrefetch> _processedFiles;
+
         private static bool CheckForDotnet46()
         {
             using (
@@ -46,8 +47,6 @@ namespace PECmd
                 return releaseKey >= 393295;
             }
         }
-
-        private static List<IPrefetch> _processedFiles;
 
         private static void Main(string[] args)
         {
@@ -84,10 +83,10 @@ namespace PECmd
                     "Comma separated list of keywords to highlight in output. By default, 'temp' and 'tmp' are highlighted. Any additional keywords will be added to these.");
 
             _fluentCommandLineParser.Setup(arg => arg.Quiet)
-    .As('q')
-    .WithDescription(
-        "Do not dump full details about each file processed. Speeds up processing when using --json or --csv\r\n")
-    .SetDefault(false);
+                .As('q')
+                .WithDescription(
+                    "Do not dump full details about each file processed. Speeds up processing when using --json or --csv\r\n")
+                .SetDefault(false);
 
             _fluentCommandLineParser.Setup(arg => arg.JsonDirectory)
                 .As("json")
@@ -120,7 +119,6 @@ namespace PECmd
                     "Display dates using timezone of machine PECmd is running on vs. UTC").SetDefault(false);
 
 
-
             var header =
                 $"PECmd version {Assembly.GetExecutingAssembly().GetName().Version}" +
                 "\r\n\r\nAuthor: Eric Zimmerman (saericzimmerman@gmail.com)" +
@@ -130,11 +128,12 @@ namespace PECmd
                          @" PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf"" --json ""D:\jsonOutput"" --jsonpretty" +
                          "\r\n\t " +
                          @" PECmd.exe -d ""C:\Temp"" -k ""system32, fonts""" + "\r\n\t " +
-                         @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp\prefetch_out.tsv"" --local --json c:\temp\json" + "\r\n\t " +
+                         @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp\prefetch_out.tsv"" --local --json c:\temp\json" +
+                         "\r\n\t " +
 //                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa" + "\r\n\t " +
 //                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa -m 15 -x 22" + "\r\n\t " +
                          @" PECmd.exe -d ""C:\Windows\Prefetch""" + "\r\n\t " +
-                                      "\r\n\t" +
+                         "\r\n\t" +
                          "  Short options (single letter) are prefixed with a single dash. Long commands are prefixed with two dashes\r\n";
 
             _fluentCommandLineParser.SetupHelp("?", "help")
@@ -242,20 +241,17 @@ namespace PECmd
                     {
                         _processedFiles.Add(pf);
                     }
-                        
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    _logger.Error($"Unable to access '{_fluentCommandLineParser.Object.File}'. Are you running as an administrator? Error: {ex.Message}");
-                    return;
+                    _logger.Error(
+                        $"Unable to access '{_fluentCommandLineParser.Object.File}'. Are you running as an administrator? Error: {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
-                    return;
+                    _logger.Error(
+                        $"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
                 }
-
-  
             }
             else
             {
@@ -269,19 +265,21 @@ namespace PECmd
                 try
                 {
                     pfFiles = Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",
-                    SearchOption.AllDirectories);
+                        SearchOption.AllDirectories);
                 }
                 catch (UnauthorizedAccessException ua)
                 {
-                    _logger.Error($"Unable to access '{_fluentCommandLineParser.Object.Directory}'. Are you running as an administrator? Error: {ua.Message}");
+                    _logger.Error(
+                        $"Unable to access '{_fluentCommandLineParser.Object.Directory}'. Are you running as an administrator? Error: {ua.Message}");
                     return;
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
+                    _logger.Error(
+                        $"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
                     return;
                 }
-                
+
                 _logger.Info($"Found {pfFiles.Length:N0} Prefetch files");
                 _logger.Info("");
 
@@ -305,7 +303,7 @@ namespace PECmd
                 }
 
                 _logger.Info(
-                 $"Processed {pfFiles.Length - _failedFiles.Count:N0} out of {pfFiles.Length:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
+                    $"Processed {pfFiles.Length - _failedFiles.Count:N0} out of {pfFiles.Length:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
                 if (_failedFiles.Count > 0)
                 {
                     _logger.Info("");
@@ -370,7 +368,8 @@ namespace PECmd
                             File.WriteAllText(Path.Combine(outDir, "normalize.css"), Resources.normalize);
                             File.WriteAllText(Path.Combine(outDir, "style.css"), Resources.style);
 
-                            var outFile = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory, outDir, "index.xhtml");
+                            var outFile = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory, outDir,
+                                "index.xhtml");
 
                             _logger.Warn($"Saving HTML output to '{outFile}'");
 
@@ -442,7 +441,7 @@ namespace PECmd
 
                             xml?.WriteElementString("Directories", o.Directories);
                             xml?.WriteElementString("FilesLoaded", o.FilesLoaded);
-                            
+
                             xml?.WriteEndElement();
 
 //                            if (_fluentCommandLineParser.Object.XmlDirectory?.Length > 0)
@@ -466,7 +465,6 @@ namespace PECmd
                         _logger.Error($"Error exporting data! Error: {ex.Message}");
                     }
                 }
-
             }
         }
 
@@ -510,8 +508,8 @@ namespace PECmd
                 : pf.VolumeInformation[0].CreationTime;
 
             var lr = _fluentCommandLineParser.Object.LocalTime
-            ? pf.LastRunTimes[0].ToLocalTime()
-            : pf.LastRunTimes[0];
+                ? pf.LastRunTimes[0].ToLocalTime()
+                : pf.LastRunTimes[0];
 
             var csOut = new CsvOut
             {
@@ -647,7 +645,7 @@ namespace PECmd
         {
             var attribute = value.GetType()
                 .GetField(value.ToString())
-                .GetCustomAttributes(typeof (DescriptionAttribute), false)
+                .GetCustomAttributes(typeof(DescriptionAttribute), false)
                 .SingleOrDefault() as DescriptionAttribute;
             return attribute == null ? value.ToString() : attribute.Description;
         }
@@ -659,7 +657,7 @@ namespace PECmd
                 _logger.Warn($"Processing '{pfFile}'");
                 _logger.Info("");
             }
-            
+
 
             var sw = new Stopwatch();
             sw.Start();
@@ -670,63 +668,60 @@ namespace PECmd
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
                 {
+                    var created = _fluentCommandLineParser.Object.LocalTime
+                        ? pf.SourceCreatedOn.ToLocalTime()
+                        : pf.SourceCreatedOn;
+                    var modified = _fluentCommandLineParser.Object.LocalTime
+                        ? pf.SourceModifiedOn.ToLocalTime()
+                        : pf.SourceModifiedOn;
+                    var accessed = _fluentCommandLineParser.Object.LocalTime
+                        ? pf.SourceAccessedOn.ToLocalTime()
+                        : pf.SourceAccessedOn;
 
-                
+                    _logger.Info($"Created on: {created}");
+                    _logger.Info($"Modified on: {modified}");
+                    _logger.Info($"Last accessed on: {accessed}");
+                    _logger.Info("");
 
-                var created = _fluentCommandLineParser.Object.LocalTime
-                    ? pf.SourceCreatedOn.ToLocalTime()
-                    : pf.SourceCreatedOn;
-                var modified = _fluentCommandLineParser.Object.LocalTime
-                    ? pf.SourceModifiedOn.ToLocalTime()
-                    : pf.SourceModifiedOn;
-                var accessed = _fluentCommandLineParser.Object.LocalTime
-                    ? pf.SourceAccessedOn.ToLocalTime()
-                    : pf.SourceAccessedOn;
+                    var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
+                    var dd = new string('0', dirString.Length);
+                    var dirFormat = $"{dd}.##";
 
-                _logger.Info($"Created on: {created}");
-                _logger.Info($"Modified on: {modified}");
-                _logger.Info($"Last accessed on: {accessed}");
-                _logger.Info("");
+                    var fString = pf.FileMetricsCount.ToString(CultureInfo.InvariantCulture);
+                    var ff = new string('0', fString.Length);
+                    var fileFormat = $"{ff}.##";
 
-                var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
-                var dd = new string('0', dirString.Length);
-                var dirFormat = $"{dd}.##";
+                    _logger.Info($"Executable name: {pf.Header.ExecutableFilename}");
+                    _logger.Info($"Hash: {pf.Header.Hash}");
+                    _logger.Info($"File size (bytes): {pf.Header.FileSize:N0}");
+                    _logger.Info($"Version: {GetDescriptionFromEnumValue(pf.Header.Version)}");
+                    _logger.Info("");
 
-                var fString = pf.FileMetricsCount.ToString(CultureInfo.InvariantCulture);
-                var ff = new string('0', fString.Length);
-                var fileFormat = $"{ff}.##";
+                    _logger.Info($"Run count: {pf.RunCount:N0}");
 
-                _logger.Info($"Executable name: {pf.Header.ExecutableFilename}");
-                _logger.Info($"Hash: {pf.Header.Hash}");
-                _logger.Info($"File size (bytes): {pf.Header.FileSize:N0}");
-                _logger.Info($"Version: {GetDescriptionFromEnumValue(pf.Header.Version)}");
-                _logger.Info("");
-
-                _logger.Info($"Run count: {pf.RunCount:N0}");
-
-                var lastRun = pf.LastRunTimes.First();
-                if (_fluentCommandLineParser.Object.LocalTime)
-                {
-                    lastRun = lastRun.ToLocalTime();
-                }
-
-                _logger.Warn($"Last run: {lastRun}");
-
-                if (pf.LastRunTimes.Count > 1)
-                {
-                    var lastRuns = pf.LastRunTimes.Skip(1).ToList();
-
+                    var lastRun = pf.LastRunTimes.First();
                     if (_fluentCommandLineParser.Object.LocalTime)
                     {
-                        for (var i = 0; i < lastRuns.Count; i++)
-                        {
-                            lastRuns[i] = lastRuns[i].ToLocalTime();
-                        }
+                        lastRun = lastRun.ToLocalTime();
                     }
-                    var otherRunTimes = string.Join(", ", lastRuns);
 
-                    _logger.Info($"Other run times: {otherRunTimes}");
-                }
+                    _logger.Warn($"Last run: {lastRun}");
+
+                    if (pf.LastRunTimes.Count > 1)
+                    {
+                        var lastRuns = pf.LastRunTimes.Skip(1).ToList();
+
+                        if (_fluentCommandLineParser.Object.LocalTime)
+                        {
+                            for (var i = 0; i < lastRuns.Count; i++)
+                            {
+                                lastRuns[i] = lastRuns[i].ToLocalTime();
+                            }
+                        }
+                        var otherRunTimes = string.Join(", ", lastRuns);
+
+                        _logger.Info($"Other run times: {otherRunTimes}");
+                    }
 //
 //                if (_fluentCommandLineParser.Object.Quiet == false)
 //                {
@@ -755,7 +750,6 @@ namespace PECmd
                         foreach (var volumeInfo in pf.VolumeInformation)
                         {
                             totalDirs += volumeInfo.DirectoryNames.Count;
-
                         }
                     }
 
@@ -837,7 +831,7 @@ namespace PECmd
                     _logger.Info("\r\n");
                 }
 
-                
+
                 return pf;
             }
             catch (ArgumentNullException)
@@ -926,6 +920,5 @@ namespace PECmd
 
         //public string XmlDirectory { get; set; }
         public string xHtmlDirectory { get; set; }
-        
     }
 }
