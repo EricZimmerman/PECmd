@@ -814,9 +814,7 @@ namespace PECmd
                     }
                 }
 
-
                 sw.Stop();
-
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
                 {
@@ -830,7 +828,6 @@ namespace PECmd
                 {
                     _logger.Info("\r\n");
                 }
-
 
                 return pf;
             }
@@ -848,7 +845,6 @@ namespace PECmd
 
                 _failedFiles.Add(pfFile);
             }
-
 
             return null;
         }
