@@ -28,6 +28,8 @@ namespace PECmd
         private const string SSLicenseFile = @"D:\SSLic.txt";
         private static Logger _logger;
 
+        private static string _preciseTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff K";
+
         private static HashSet<string> _keywords;
         private static FluentCommandLineParser<ApplicationArguments> _fluentCommandLineParser;
 
@@ -93,10 +95,10 @@ namespace PECmd
                 .WithDescription(
                     "Directory to save json representation to. Use --pretty for a more human readable layout");
 
-            _fluentCommandLineParser.Setup(arg => arg.CsvFile)
+            _fluentCommandLineParser.Setup(arg => arg.CsvDirectory)
                 .As("csv")
                 .WithDescription(
-                    "File to save CSV (tab separated) results to. Be sure to include the full path in double quotes");
+                    "Directory to save CSV (tab separated) results to. Be sure to include the full path in double quotes");
 
 //            _fluentCommandLineParser.Setup(arg => arg.XmlDirectory)
 //               .As("xml")
@@ -116,7 +118,17 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.LocalTime)
                 .As("local")
                 .WithDescription(
-                    "Display dates using timezone of machine PECmd is running on vs. UTC").SetDefault(false);
+                    "Display dates using timezone of machine PECmd is running on vs. UTC\r\n").SetDefault(false);
+
+            _fluentCommandLineParser.Setup(arg => arg.DateTimeFormat)
+.As("dt")
+.WithDescription(
+  "The custom date/time format to use when displaying time stamps. Default is: yyyy-MM-dd HH:mm:ss K").SetDefault("yyyy-MM-dd HH:mm:ss K");
+
+            _fluentCommandLineParser.Setup(arg => arg.PreciseTimestamps)
+   .As("mp")
+   .WithDescription(
+       "When true, display higher precision for time stamps. Default is false").SetDefault(false);
 
 
             var header =
@@ -191,23 +203,6 @@ namespace PECmd
                 }
             }
 
-            if (_fluentCommandLineParser.Object.CsvFile?.Length > 0)
-            {
-                var dirName = Path.GetDirectoryName(_fluentCommandLineParser.Object.CsvFile);
-
-                if (dirName == null)
-                {
-                    _logger.Warn(
-                        $"Couldn't determine directory for '{_fluentCommandLineParser.Object.CsvFile}'. Exiting...");
-                    return;
-                }
-
-                if (Directory.Exists(dirName) == false)
-                {
-                    _logger.Warn($"Path to '{_fluentCommandLineParser.Object.CsvFile}' doesn't exist. Creating...");
-                    Directory.CreateDirectory(dirName);
-                }
-            }
 
 
             _logger.Info(header);
@@ -217,18 +212,14 @@ namespace PECmd
             _logger.Info($"Keywords: {string.Join(", ", _keywords)}");
             _logger.Info("");
 
-            _processedFiles = new List<IPrefetch>();
-
-            if (_fluentCommandLineParser.Object.CsvFile?.Length > 0)
+            if (_fluentCommandLineParser.Object.PreciseTimestamps)
             {
-                if (string.IsNullOrEmpty(Path.GetFileName(_fluentCommandLineParser.Object.CsvFile)))
-                {
-                    _logger.Error(
-                        $"'{_fluentCommandLineParser.Object.CsvFile}' is not a file. Please specify a file to save results to. Exiting");
-                    return;
-                }
+                _fluentCommandLineParser.Object.DateTimeFormat = _preciseTimeFormat;
             }
 
+            _processedFiles = new List<IPrefetch>();
+
+            _failedFiles = new List<string>();
 
             if (_fluentCommandLineParser.Object.File?.Length > 0)
             {
@@ -260,7 +251,7 @@ namespace PECmd
 
                 string[] pfFiles = null;
 
-                _failedFiles = new List<string>();
+              
 
                 try
                 {
@@ -304,6 +295,7 @@ namespace PECmd
 
                 _logger.Info(
                     $"Processed {pfFiles.Length - _failedFiles.Count:N0} out of {pfFiles.Length:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
+
                 if (_failedFiles.Count > 0)
                 {
                     _logger.Info("");
@@ -314,182 +306,163 @@ namespace PECmd
                     }
                 }
 
-                if (_processedFiles.Count > 0)
+            }
+
+            if (_processedFiles.Count > 0)
+            {
+                _logger.Info("");
+
+                try
                 {
-                    _logger.Info("");
+                    CsvWriter csv = null;
+                    StreamWriter streamWriter = null;
 
-                    try
+                    if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
                     {
-                        CsvWriter csv = null;
-                        StreamWriter streamWriter = null;
+                        var outName = $"{DateTimeOffset.Now.ToString("yyyyMMddHHmmss")}_PECmd_Output.tsv";
+                        var outFile = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outName);
 
-                        if (_fluentCommandLineParser.Object.CsvFile?.Length > 0)
+
+                        if (Directory.Exists(_fluentCommandLineParser.Object.CsvDirectory) == false)
                         {
-                            _fluentCommandLineParser.Object.CsvFile =
-                                Path.GetFullPath(_fluentCommandLineParser.Object.CsvFile);
-                            _logger.Warn(
-                                $"CSV (tab separated) output will be saved to '{_fluentCommandLineParser.Object.CsvFile}'");
+                            _logger.Warn($"Path to '{_fluentCommandLineParser.Object.CsvDirectory}' doesn't exist. Creating...");
+                            Directory.CreateDirectory(_fluentCommandLineParser.Object.CsvDirectory);
+                        }
 
-                            try
-                            {
-                                streamWriter = new StreamWriter(_fluentCommandLineParser.Object.CsvFile);
-                                csv = new CsvWriter(streamWriter);
-                                csv.Configuration.Delimiter = $"{'\t'}";
-                                csv.WriteHeader(typeof(CsvOut));
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.Error(
-                                    $"Unable to open '{_fluentCommandLineParser.Object.CsvFile}' for writing. CSV export canceled. Error: {ex.Message}");
-                            }
+
+
+                        _logger.Warn(
+                            $"CSV (tab separated) output will be saved to '{outFile}'");
+
+                        try
+                        {
+                            streamWriter = new StreamWriter(outFile);
+                            csv = new CsvWriter(streamWriter);
+                            csv.Configuration.Delimiter = $"{'\t'}";
+                            csv.WriteHeader(typeof(CsvOut));
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(
+                                $"Unable to open '{outFile}' for writing. CSV export canceled. Error: {ex.Message}");
+                        }
+                    }
+
+                    if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
+                    {
+                        _logger.Warn($"Saving json output to '{_fluentCommandLineParser.Object.JsonDirectory}'");
+                    }
+
+                    XmlTextWriter xml = null;
+
+                    if (_fluentCommandLineParser.Object.xHtmlDirectory?.Length > 0)
+                    {
+                        var outDir = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory,
+                            $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_PECmd_Output_for_{_fluentCommandLineParser.Object.xHtmlDirectory.Replace(@":\", "_").Replace(@"\", "_")}");
+
+                        if (Directory.Exists(outDir) == false)
+                        {
+                            Directory.CreateDirectory(outDir);
+                        }
+
+                        File.WriteAllText(Path.Combine(outDir, "normalize.css"), Resources.normalize);
+                        File.WriteAllText(Path.Combine(outDir, "style.css"), Resources.style);
+
+                        var outFile = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory, outDir,
+                            "index.xhtml");
+
+                        _logger.Warn($"Saving HTML output to '{outFile}'");
+
+                        xml = new XmlTextWriter(outFile, Encoding.UTF8)
+                        {
+                            Formatting = Formatting.Indented,
+                            Indentation = 4
+                        };
+
+                        xml.WriteStartDocument();
+
+                        xml.WriteProcessingInstruction("xml-stylesheet", "href=\"normalize.css\"");
+                        xml.WriteProcessingInstruction("xml-stylesheet", "href=\"style.css\"");
+
+                        xml.WriteStartElement("document");
+                    }
+
+                    foreach (var processedFile in _processedFiles)
+                    {
+                        var o = GetCsvFormat(processedFile);
+
+                        try
+                        {
+                            csv?.WriteRecord(o);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(
+                                $"Error writing record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
                         }
 
                         if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
                         {
-                            _logger.Warn($"Saving json output to '{_fluentCommandLineParser.Object.JsonDirectory}'");
-                        }
-//                        if (_fluentCommandLineParser.Object.XmlDirectory?.Length > 0)
-//                        {
-//                            _logger.Info($"Saving XML output to '{_fluentCommandLineParser.Object.XmlDirectory}'");
-//                        }
-
-                        XmlTextWriter xml = null;
-
-                        if (_fluentCommandLineParser.Object.xHtmlDirectory?.Length > 0)
-                        {
-                            var outDir = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory,
-                                $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_PECmd_Output_for_{_fluentCommandLineParser.Object.xHtmlDirectory.Replace(@":\", "_").Replace(@"\", "_")}");
-
-                            if (Directory.Exists(outDir) == false)
-                            {
-                                Directory.CreateDirectory(outDir);
-                            }
-
-                            File.WriteAllText(Path.Combine(outDir, "normalize.css"), Resources.normalize);
-                            File.WriteAllText(Path.Combine(outDir, "style.css"), Resources.style);
-
-                            var outFile = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory, outDir,
-                                "index.xhtml");
-
-                            _logger.Warn($"Saving HTML output to '{outFile}'");
-
-                            xml = new XmlTextWriter(outFile, Encoding.UTF8)
-                            {
-                                Formatting = Formatting.Indented,
-                                Indentation = 4
-                            };
-
-                            xml.WriteStartDocument();
-
-                            xml.WriteProcessingInstruction("xml-stylesheet", "href=\"normalize.css\"");
-                            xml.WriteProcessingInstruction("xml-stylesheet", "href=\"style.css\"");
-
-                            xml.WriteStartElement("document");
+                            SaveJson(processedFile, _fluentCommandLineParser.Object.JsonPretty,
+                                _fluentCommandLineParser.Object.JsonDirectory);
                         }
 
-                        foreach (var processedFile in _processedFiles)
-                        {
-                            var o = GetCsvFormat(processedFile);
+                        //XHTML
+                        xml?.WriteStartElement("Container");
+                        xml?.WriteElementString("SourceFile", o.SourceFilename);
+                        xml?.WriteElementString("SourceCreated", o.SourceCreated);
+                        xml?.WriteElementString("SourceModified", o.SourceModified);
+                        xml?.WriteElementString("SourceAccessed", o.SourceAccessed);
 
-                            try
-                            {
-                                csv?.WriteRecord(o);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.Error(
-                                    $"Error writing record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvFile}'. Error: {ex.Message}");
-                            }
+                        xml?.WriteElementString("LastRun", o.LastRun);
 
-                            if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
-                            {
-                                SaveJson(processedFile, _fluentCommandLineParser.Object.JsonPretty,
-                                    _fluentCommandLineParser.Object.JsonDirectory);
-                            }
+                        xml?.WriteElementString("PreviousRun0", $"{o.PreviousRun0}");
+                        xml?.WriteElementString("PreviousRun1", $"{o.PreviousRun1}");
+                        xml?.WriteElementString("PreviousRun2", $"{o.PreviousRun2}");
+                        xml?.WriteElementString("PreviousRun3", $"{o.PreviousRun3}");
+                        xml?.WriteElementString("PreviousRun4", $"{o.PreviousRun4}");
+                        xml?.WriteElementString("PreviousRun5", $"{o.PreviousRun5}");
+                        xml?.WriteElementString("PreviousRun6", $"{o.PreviousRun6}");
 
-                            //XHTML
-                            xml?.WriteStartElement("Container");
-                            xml?.WriteElementString("SourceFile", o.SourceFilename);
-                            xml?.WriteElementString("SourceCreated", o.SourceCreated.ToString());
-                            xml?.WriteElementString("SourceModified", o.SourceModified.ToString());
-                            xml?.WriteElementString("SourceAccessed", o.SourceAccessed.ToString());
+                        xml?.WriteElementString("ExecutableName", o.ExecutableName);
+                        xml?.WriteElementString("RunCount", $"{o.RunCount}");
+                        xml?.WriteElementString("Size", $"{o.Size}");
+                        xml?.WriteElementString("Hash", o.Hash);
+                        xml?.WriteElementString("Version", o.Version);
+                        xml?.WriteElementString("Note", o.Note);
 
-                            xml?.WriteElementString("LastRun", o.LastRun.ToString());
+                        xml?.WriteElementString("Volume0Name", o.Volume0Name);
+                        xml?.WriteElementString("Volume0Serial", o.Volume0Serial);
+                        xml?.WriteElementString("Volume0Created", o.Volume0Created);
 
-                            xml?.WriteElementString("PreviousRun0", $"{o.PreviousRun0}");
-                            xml?.WriteElementString("PreviousRun1", $"{o.PreviousRun1}");
-                            xml?.WriteElementString("PreviousRun2", $"{o.PreviousRun2}");
-                            xml?.WriteElementString("PreviousRun3", $"{o.PreviousRun3}");
-                            xml?.WriteElementString("PreviousRun4", $"{o.PreviousRun4}");
-                            xml?.WriteElementString("PreviousRun5", $"{o.PreviousRun5}");
-                            xml?.WriteElementString("PreviousRun6", $"{o.PreviousRun6}");
+                        xml?.WriteElementString("Volume1Name", o.Volume1Name);
+                        xml?.WriteElementString("Volume1Serial", o.Volume1Serial);
+                        xml?.WriteElementString("Volume1Created", o.Volume1Created);
 
-                            xml?.WriteElementString("ExecutableName", o.ExecutableName);
-                            xml?.WriteElementString("RunCount", $"{o.RunCount}");
-                            xml?.WriteElementString("Size", $"{o.Size}");
-                            xml?.WriteElementString("Hash", o.Hash);
-                            xml?.WriteElementString("Version", o.Version);
-                            xml?.WriteElementString("Note", o.Note);
+                        xml?.WriteElementString("Directories", o.Directories);
+                        xml?.WriteElementString("FilesLoaded", o.FilesLoaded);
 
-                            xml?.WriteElementString("Volume0Name", o.Volume0Name);
-                            xml?.WriteElementString("Volume0Serial", o.Volume0Serial);
-                            xml?.WriteElementString("Volume0Created", o.Volume0Created.ToString());
-
-                            xml?.WriteElementString("Volume1Name", o.Volume1Name);
-                            xml?.WriteElementString("Volume1Serial", o.Volume1Serial);
-                            xml?.WriteElementString("Volume1Created", o.Volume1Created.ToString());
-
-                            xml?.WriteElementString("Directories", o.Directories);
-                            xml?.WriteElementString("FilesLoaded", o.FilesLoaded);
-
-                            xml?.WriteEndElement();
-
-//                            if (_fluentCommandLineParser.Object.XmlDirectory?.Length > 0)
-//                            {
-//                                SaveXML(o, _fluentCommandLineParser.Object.XmlDirectory);
-//                            }
-                        }
-
-
-                        //Close CSV stuff
-                        streamWriter?.Flush();
-                        streamWriter?.Close();
-
-                        //Close XML
                         xml?.WriteEndElement();
-                        xml?.WriteEndDocument();
-                        xml?.Flush();
+
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.Error($"Error exporting data! Error: {ex.Message}");
-                    }
+
+
+                    //Close CSV stuff
+                    streamWriter?.Flush();
+                    streamWriter?.Close();
+
+                    //Close XML
+                    xml?.WriteEndElement();
+                    xml?.WriteEndDocument();
+                    xml?.Flush();
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error exporting data! Error: {ex.Message}");
                 }
             }
         }
 
-//        private static void SaveXML(CsvOut csout, string outDir)
-//        {
-//            try
-//            {
-//                if (Directory.Exists(outDir) == false)
-//                {
-//                    Directory.CreateDirectory(outDir);
-//                }
-//
-//                var outName =
-//                    $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_{Path.GetFileName(csout.SourceFilename)}.xml";
-//                var outFile = Path.Combine(outDir, outName);
-//
-//         
-//
-//                File.WriteAllText(outFile, csout.ToXml());
-//            }
-//            catch (Exception ex)
-//            {
-//                _logger.Error($"Error exporting XML for '{csout.SourceFilename}'. Error: {ex.Message}");
-//            }
-//        }
 
         private static CsvOut GetCsvFormat(IPrefetch pf)
         {
@@ -514,18 +487,18 @@ namespace PECmd
             var csOut = new CsvOut
             {
                 SourceFilename = pf.SourceFilename,
-                SourceCreated = created,
-                SourceModified = modified,
-                SourceAccessed = accessed,
+                SourceCreated = created.ToString(_fluentCommandLineParser.Object.DateTimeFormat),
+                SourceModified = modified.ToString(_fluentCommandLineParser.Object.DateTimeFormat),
+                SourceAccessed = accessed.ToString(_fluentCommandLineParser.Object.DateTimeFormat),
                 Hash = pf.Header.Hash,
                 ExecutableName = pf.Header.ExecutableFilename,
-                Size = pf.Header.FileSize,
+                Size = pf.Header.FileSize.ToString(),
                 Version = GetDescriptionFromEnumValue(pf.Header.Version),
-                RunCount = pf.RunCount,
-                Volume0Created = vol0Create,
+                RunCount = pf.RunCount.ToString(),
+                Volume0Created = vol0Create.ToString(_fluentCommandLineParser.Object.DateTimeFormat),
                 Volume0Name = pf.VolumeInformation[0].DeviceName,
                 Volume0Serial = pf.VolumeInformation[0].SerialNumber,
-                LastRun = lr
+                LastRun = lr.ToString(_fluentCommandLineParser.Object.DateTimeFormat)
             };
 
             if (pf.LastRunTimes.Count > 1)
@@ -533,7 +506,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[1].ToLocalTime()
                     : pf.LastRunTimes[1];
-                csOut.PreviousRun0 = lrt;
+                csOut.PreviousRun0 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.LastRunTimes.Count > 2)
@@ -541,7 +514,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[2].ToLocalTime()
                     : pf.LastRunTimes[2];
-                csOut.PreviousRun1 = lrt;
+                csOut.PreviousRun1 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.LastRunTimes.Count > 3)
@@ -549,7 +522,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[3].ToLocalTime()
                     : pf.LastRunTimes[3];
-                csOut.PreviousRun2 = lrt;
+                csOut.PreviousRun2 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.LastRunTimes.Count > 4)
@@ -557,7 +530,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[4].ToLocalTime()
                     : pf.LastRunTimes[4];
-                csOut.PreviousRun3 = lrt;
+                csOut.PreviousRun3 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.LastRunTimes.Count > 5)
@@ -565,7 +538,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[5].ToLocalTime()
                     : pf.LastRunTimes[5];
-                csOut.PreviousRun4 = lrt;
+                csOut.PreviousRun4 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.LastRunTimes.Count > 6)
@@ -573,7 +546,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[6].ToLocalTime()
                     : pf.LastRunTimes[6];
-                csOut.PreviousRun5 = lrt;
+                csOut.PreviousRun5 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.LastRunTimes.Count > 7)
@@ -581,7 +554,7 @@ namespace PECmd
                 var lrt = _fluentCommandLineParser.Object.LocalTime
                     ? pf.LastRunTimes[7].ToLocalTime()
                     : pf.LastRunTimes[7];
-                csOut.PreviousRun6 = lrt;
+                csOut.PreviousRun6 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
             if (pf.VolumeCount > 1)
@@ -589,7 +562,7 @@ namespace PECmd
                 var vol1 = _fluentCommandLineParser.Object.LocalTime
                     ? pf.VolumeInformation[1].CreationTime.ToLocalTime()
                     : pf.VolumeInformation[1].CreationTime;
-                csOut.Volume1Created = vol1;
+                csOut.Volume1Created = vol1.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
                 csOut.Volume1Name = pf.VolumeInformation[1].DeviceName;
                 csOut.Volume1Serial = pf.VolumeInformation[1].SerialNumber;
             }
@@ -678,9 +651,9 @@ namespace PECmd
                         ? pf.SourceAccessedOn.ToLocalTime()
                         : pf.SourceAccessedOn;
 
-                    _logger.Info($"Created on: {created}");
-                    _logger.Info($"Modified on: {modified}");
-                    _logger.Info($"Last accessed on: {accessed}");
+                    _logger.Info($"Created on: {created.ToString(_fluentCommandLineParser.Object.DateTimeFormat)}");
+                    _logger.Info($"Modified on: {modified.ToString(_fluentCommandLineParser.Object.DateTimeFormat)}");
+                    _logger.Info($"Last accessed on: {accessed.ToString(_fluentCommandLineParser.Object.DateTimeFormat)}");
                     _logger.Info("");
 
                     var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
@@ -705,7 +678,7 @@ namespace PECmd
                         lastRun = lastRun.ToLocalTime();
                     }
 
-                    _logger.Warn($"Last run: {lastRun}");
+                    _logger.Warn($"Last run: {lastRun.ToString(_fluentCommandLineParser.Object.DateTimeFormat)}");
 
                     if (pf.LastRunTimes.Count > 1)
                     {
@@ -718,7 +691,9 @@ namespace PECmd
                                 lastRuns[i] = lastRuns[i].ToLocalTime();
                             }
                         }
-                        var otherRunTimes = string.Join(", ", lastRuns);
+
+
+                        var otherRunTimes = string.Join(", ", lastRuns.Select(t=>t.ToString(_fluentCommandLineParser.Object.DateTimeFormat)));
 
                         _logger.Info($"Other run times: {otherRunTimes}");
                     }
@@ -729,6 +704,7 @@ namespace PECmd
                     _logger.Info("Volume information:");
                     _logger.Info("");
                     var volnum = 0;
+
                     foreach (var volumeInfo in pf.VolumeInformation)
                     {
                         var localCreate = volumeInfo.CreationTime;
@@ -737,7 +713,7 @@ namespace PECmd
                             localCreate = localCreate.ToLocalTime();
                         }
                         _logger.Info(
-                            $"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {localCreate} Directories: {volumeInfo.DirectoryNames.Count:N0} File references: {volumeInfo.FileReferences.Count:N0}");
+                            $"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {localCreate.ToString(_fluentCommandLineParser.Object.DateTimeFormat)} Directories: {volumeInfo.DirectoryNames.Count:N0} File references: {volumeInfo.FileReferences.Count:N0}");
                         volnum += 1;
                     }
                     _logger.Info("");
@@ -831,19 +807,19 @@ namespace PECmd
 
                 return pf;
             }
-            catch (ArgumentNullException)
+            catch (ArgumentNullException an)
             {
                 _logger.Error(
                     $"Error opening '{pfFile}'.\r\n\r\nThis appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files");
                 _logger.Info("");
-                _failedFiles.Add(pfFile);
+                _failedFiles.Add($"{pfFile} ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error opening '{pfFile}'. Message: {ex.Message}");
                 _logger.Info("");
 
-                _failedFiles.Add(pfFile);
+                _failedFiles.Add($"{pfFile} ==> ({ex.Message})");
             }
 
             return null;
@@ -872,31 +848,31 @@ namespace PECmd
         {
             public string Note { get; set; }
             public string SourceFilename { get; set; }
-            public DateTimeOffset SourceCreated { get; set; }
-            public DateTimeOffset SourceModified { get; set; }
-            public DateTimeOffset SourceAccessed { get; set; }
+            public string SourceCreated { get; set; }
+            public string SourceModified { get; set; }
+            public string SourceAccessed { get; set; }
             public string ExecutableName { get; set; }
             public string Hash { get; set; }
-            public int Size { get; set; }
-            public string Version { get; set; }
-            public int RunCount { get; set; }
+            public string Size { get; set; }
+            public string   Version { get; set; }
+            public string RunCount { get; set; }
 
-            public DateTimeOffset LastRun { get; set; }
-            public DateTimeOffset? PreviousRun0 { get; set; }
-            public DateTimeOffset? PreviousRun1 { get; set; }
-            public DateTimeOffset? PreviousRun2 { get; set; }
-            public DateTimeOffset? PreviousRun3 { get; set; }
-            public DateTimeOffset? PreviousRun4 { get; set; }
-            public DateTimeOffset? PreviousRun5 { get; set; }
-            public DateTimeOffset? PreviousRun6 { get; set; }
+            public string LastRun { get; set; }
+            public string PreviousRun0 { get; set; }
+            public string PreviousRun1 { get; set; }
+            public string PreviousRun2 { get; set; }
+            public string PreviousRun3 { get; set; }
+            public string PreviousRun4 { get; set; }
+            public string PreviousRun5 { get; set; }
+            public string PreviousRun6 { get; set; }
 
             public string Volume0Name { get; set; }
             public string Volume0Serial { get; set; }
-            public DateTimeOffset Volume0Created { get; set; }
+            public string Volume0Created { get; set; }
 
             public string Volume1Name { get; set; }
             public string Volume1Serial { get; set; }
-            public DateTimeOffset? Volume1Created { get; set; }
+            public string Volume1Created { get; set; }
 
             public string Directories { get; set; }
             public string FilesLoaded { get; set; }
@@ -911,10 +887,15 @@ namespace PECmd
         public string JsonDirectory { get; set; }
         public bool JsonPretty { get; set; }
         public bool LocalTime { get; set; }
-        public string CsvFile { get; set; }
+        public string CsvDirectory { get; set; }
         public bool Quiet { get; set; }
 
-        //public string XmlDirectory { get; set; }
+        public string DateTimeFormat { get; set; }
+
+        public bool PreciseTimestamps { get; set; }
+
+
+
         public string xHtmlDirectory { get; set; }
     }
 }
