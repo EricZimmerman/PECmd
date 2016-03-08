@@ -317,10 +317,16 @@ namespace PECmd
                     CsvWriter csv = null;
                     StreamWriter streamWriter = null;
 
+                    CsvWriter csvTl = null;
+                    StreamWriter streamWriterTl = null;
+
+
                     if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
                     {
                         var outName = $"{DateTimeOffset.Now.ToString("yyyyMMddHHmmss")}_PECmd_Output.tsv";
+                        var outNameTl = $"{DateTimeOffset.Now.ToString("yyyyMMddHHmmss")}_PECmd_Output_Timeline.tsv";
                         var outFile = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outName);
+                        var outFileTl = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outNameTl);
 
 
                         if (Directory.Exists(_fluentCommandLineParser.Object.CsvDirectory) == false)
@@ -329,10 +335,8 @@ namespace PECmd
                             Directory.CreateDirectory(_fluentCommandLineParser.Object.CsvDirectory);
                         }
 
-
-
-                        _logger.Warn(
-                            $"CSV (tab separated) output will be saved to '{outFile}'");
+                        _logger.Warn($"CSV (tab separated) output will be saved to '{outFile}'");
+                        _logger.Warn($"CSV time line (tab separated) output will be saved to '{outFileTl}'");
 
                         try
                         {
@@ -340,6 +344,11 @@ namespace PECmd
                             csv = new CsvWriter(streamWriter);
                             csv.Configuration.Delimiter = $"{'\t'}";
                             csv.WriteHeader(typeof(CsvOut));
+
+                            streamWriterTl = new StreamWriter(outFileTl);
+                            csvTl = new CsvWriter(streamWriterTl);
+                            csvTl.Configuration.Delimiter = $"{'\t'}";
+                            csvTl.WriteHeader(typeof(CsvOutTl));
                         }
                         catch (Exception ex)
                         {
@@ -393,12 +402,40 @@ namespace PECmd
 
                         try
                         {
+                            foreach (var dateTimeOffset in processedFile.LastRunTimes)
+                            {
+                                var t = new CsvOutTl();
+
+                                var exePath =
+                                    processedFile.Filenames.SingleOrDefault(
+                                        y => y.EndsWith(processedFile.Header.ExecutableFilename));
+
+                                if (exePath == null)
+                                {
+                                    exePath = processedFile.Header.ExecutableFilename;
+                                }
+
+                                t.ExecutableName = exePath;
+                                t.RunTime = dateTimeOffset.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
+
+                                csvTl?.WriteRecord(t);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(
+                                $"Error writing time line record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
+
+                        }
+
+                        try
+                        {
                             csv?.WriteRecord(o);
                         }
                         catch (Exception ex)
                         {
                             _logger.Error(
-                                $"Error writing record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
+                                $"Error writing CSV record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
                         }
 
                         if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
@@ -450,6 +487,9 @@ namespace PECmd
                     //Close CSV stuff
                     streamWriter?.Flush();
                     streamWriter?.Close();
+
+                    streamWriterTl?.Flush();
+                    streamWriterTl?.Close();
 
                     //Close XML
                     xml?.WriteEndElement();
@@ -842,6 +882,13 @@ namespace PECmd
             config.LoggingRules.Add(rule1);
 
             LogManager.Configuration = config;
+        }
+
+        public sealed class CsvOutTl
+        {
+            public string RunTime { get; set; }
+            public string ExecutableName { get; set; }
+
         }
 
         public sealed class CsvOut
