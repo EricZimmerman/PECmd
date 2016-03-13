@@ -1,4 +1,9 @@
 # PECmd
+
+Go here for more info
+
+http://binaryforay.blogspot.com/2016/01/pecmd-v0600-released.html
+
 Prefetch Explorer Command Line
 
     PECmd version 0.5.0.0
