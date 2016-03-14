@@ -58,6 +58,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -82,6 +83,8 @@
     <Content Include="Dependencies\Prefetch.dll" />
     <Content Include="Dependencies\ServiceStack.Text.dll" />
     <Content Include="PcDesktopConfigure.ico" />
+    <None Include="Resources\filesloaded.png" />
+    <None Include="Resources\directories.png" />
     <None Include="Resources\style.css" />
     <None Include="Resources\normalize.css" />
   </ItemGroup>

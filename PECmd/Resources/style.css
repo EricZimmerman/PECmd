@@ -1,32 +1,13 @@
-﻿/* Report styling created by: Devon Ackerman
-					  devon@aeiforensics.com
-                    Last Updated: 2016.02.16 
+﻿/* Report styling written by: Devon Ackerman
+                           Crafted for PECmd
+                      devon@aeiforensics.com
+                    Last Updated: 2016.03.04
 -------------------------------------------- */
 
-Wrapper_Forensicator {
-	width: 1400px;
-	height: auto;
-	border: medium #146B99 solid;
-	resize: both;
-	overflow: auto;
-	min-width: 50px;  /* min-width  */
-	min-height: 50px; /* min-height */
-	display: block;
-	padding: 0;
-	margin: 10px;
-	background-color: #D9ECFF;
+/* If value is empty, then hide container */	
+:empty {
+	display:none !important;
 }
-
-	Forensicator {
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-size: 14px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		padding: 2px 15px 0 2px;
-		margin: 2px 0 4px 0;
-	}
 
 Container {
 	width: 1400px;
@@ -42,13 +23,13 @@ Container {
 	background-color: #E9F0F4;
 }
 
-	/* Remove comment tags to show .LNK before and above path statement
+	/* Remove comment tags to show .PF before and above path statement
 	Container:before {
 	  display: block;
 	  width: auto;
 	  font-weight: bold;
 	  font-size: 24px;
-	  content: ".LNK File";
+	  content: ".PF File";
 	  background-color: #146B99;
 	  color: #F18C14;
 	  padding: 2px 0 0 2px;
@@ -67,7 +48,7 @@ Container {
 		margin: 0;
 	}
 	    
-	SourceCreated, SourceModified, SourceAccessed, TargetCreated, TargetModified, TargetAccessed, FileSize, RelativePath, WorkingDirectory, FileAttributes, HeaderFlags, DriveType, DriveSerialNumber, DriveLabel, LocalPath, CommonPath, TargetIDAbsolutePath, TargetMFTEntryNumber, TargetMFTSequenceNumber, MachineID, MachineMACAddress, MACVendor, TrackerCreatedOn, ExtraBlocksPresent {
+	SourceCreated, SourceModified, SourceAccessed, LastRun, PreviousRun0, PreviousRun1, PreviousRun2, PreviousRun3, PreviousRun4, PreviousRun5, PreviousRun6, ExecutableName, RunCount, Size, Hash, Version, Note, Volume0Name, Volume0Serial, Volume0Created, Volume1Name, Volume1Serial, Volume1Created, Directories, FilesLoaded {
 		display: block;
 		width: auto;
 		color: #043F5F;
@@ -78,7 +59,7 @@ Container {
 		font-size: 12px;
 		font-family: verdana, sans-serif;
 		text-align: left;
-		padding: 2px 0 0 30px;
+		padding: 2px 0 0 34px;
 		margin: 4px 0 4px 0;
 	}
 	
@@ -96,13 +77,17 @@ Container {
 		padding: 2px 20px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
 		/* Remove comment tags to show (UTC) after timestamp
 		SourceCreated:after {
 			content: " (UTC)";
 			color: #A6A8A9;
 		}
 		*/
+
+		SourceCreated:hover {
+			content: " (UTC)";
+			color: #A6A8A9;
+		}
 	
 	SourceModified:before {
 		content: "Source Modified:";
@@ -118,7 +103,6 @@ Container {
 		padding: 2px 15px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
 		/* Remove comment tags to show (UTC) after timestamp
 		SourceCreated:after {
 			content: " (UTC)";
@@ -140,7 +124,6 @@ Container {
 		padding: 2px 10px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
 		/* Remove comment tags to show (UTC) after timestamp
 		SourceCreated:after {
 			content: " (UTC)";
@@ -148,8 +131,8 @@ Container {
 		}
 		*/
 	
-	TargetCreated:before {
-		content: "Target Created:";
+	LastRun:before {
+		content: "Last Run:";
 		display: inline;
 		letter-spacing: 1pt;
 		line-height: 1;
@@ -159,19 +142,18 @@ Container {
 		font-family: verdana, sans-serif;
 		text-align: right;
 		text-decoration: underline;
-		padding: 2px 23px 0 2px;
+		padding: 2px 73px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
 		/* Remove comment tags to show (UTC) after timestamp
-		SourceCreated:after {
+		LastRun:after {
 			content: " (UTC)";
 			color: #A6A8A9;
 		}
 		*/
 	
-	TargetModified:before {
-		content: "Target Modified:";
+	PreviousRun0:before {
+		content: "Previous Run 0:";
 		display: inline;
 		letter-spacing: 1pt;
 		line-height: 1;
@@ -185,15 +167,154 @@ Container {
 		margin: 2px 0 4px 0;
 	}
 	
-		/* Remove comment tags to show (UTC) after timestamp
-		SourceCreated:after {
-			content: " (UTC)";
+	PreviousRun1:before {
+		content: "Previous Run 1:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 18px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+	
+	PreviousRun2:before {
+		content: "Previous Run 2:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 18px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+	
+	PreviousRun3:before {
+		content: "Previous Run 3:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 18px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+	
+	PreviousRun4:before {
+		content: "Previous Run 4:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 18px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+	
+	PreviousRun5:before {
+		content: "Previous Run 5:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 18px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+	
+	PreviousRun6:before {
+		content: "Previous Run 6:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 18px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+	
+	ExecutableName:before {
+		content: "Executable Name:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 10px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		RunCount:after {
+			content: " (Note: The name of the executable tracked by the pf file";
+			color: #A6A8A9;
+		}
+		*/
+	RunCount:before {
+		content: "Run Count:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 10px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+
+	Size:before {
+		content: "Size:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 10px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Size:after {
+			content: " (Note: size in bytes of executable)";
 			color: #A6A8A9;
 		}
 		*/
 	
-	TargetAccessed:before {
-		content: "Target Accessed:";
+	Hash:before {
+		content: "Hash:";
 		display: inline;
 		letter-spacing: 1pt;
 		line-height: 1;
@@ -206,16 +327,15 @@ Container {
 		padding: 2px 10px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
-		/* Remove comment tags to show (UTC) after timestamp
-		SourceCreated:after {
-			content: " (UTC)";
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Hash:after {
+			content: " (Note: The calculated hash for the pf file that should match the hash in the source file name)";
 			color: #A6A8A9;
 		}
 		*/
 	
-	FileSize:before {
-		content: "File Size:";
+	Version:before {
+		content: "Version:";
 		display: inline;
 		letter-spacing: 1pt;
 		line-height: 1;
@@ -228,187 +348,106 @@ Container {
 		padding: 2px 10px 0 2px;
 		margin: 2px 0 4px 0;
 	}
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Version:after {
+			content: " (Note: The operating system that generated the prefetch file)";
+			color: #A6A8A9;
+		}
+		*/
 	
-		FileSize:after {
-			content: " (bytes)";
+	Note:before {
+		content: "Note:";
+		display: inline;
+		letter-spacing: 1pt;
+		line-height: 1;
+		word-spacing: 2pt;
+		font-weight: bold;
+		font-size: 12px;
+		font-family: verdana, sans-serif;
+		text-align: right;
+		text-decoration: underline;
+		padding: 2px 10px 0 2px;
+		margin: 2px 0 4px 0;
+	}
+		Note:after {
+			content: " (Note: Populated when >2 volumes are identified in a prefetch file. This is rare.)";
 			color: #A6A8A9;
 		}
 	
-	RelativePath:before {
-		content: "Relative Path:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	WorkingDirectory:before {
-		content: "Working Directory:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	FileAttributes:before {
-		content: "File Attributes:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	HeaderFlags:before {
-		content: "Header Flags:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	DriveType:before {
-		content: "Drive Type:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	DriveSerialNumber:before {
-		content: "Drive Serial Number:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	DriveLabel:before {
-		content: "Drive Label:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	LocalPath:before {
-		content: "Local Path:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	CommonPath:before {
-		content: "Common Path:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	TargetIDAbsolutePath:before {
-		content: "TargetID Absolute Path:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	TargetMFTEntryNumber {
+	Volume0Name {
 		color: maroon;	
 	}
-	
-	TargetMFTEntryNumber:before {
-		content: "Target $MFT Entry Number:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	TargetMFTSequenceNumber {
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Volume0Name:after {
+			content: " (Note: The first volume name found)";
+			color: #A6A8A9;
+		}
+		*/
+		Volume0Name:before {
+			content: "Volume 0 Name:";
+			display: inline;
+			letter-spacing: 1pt;
+			line-height: 1;
+			word-spacing: 2pt;
+			font-weight: bold;
+			font-size: 12px;
+			font-family: verdana, sans-serif;
+			text-align: right;
+			text-decoration: underline;
+			padding: 2px 10px 0 2px;
+			margin: 2px 0 4px 0;
+		}
+
+	Volume0Serial {
 		color: maroon;	
 	}
-	
-	TargetMFTSequenceNumber:before {
-		content: "Target $MFT Sequence Number:";
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Volume0Serial:after {
+			content: " (Note: Serial # of the first volume)";
+			color: #A6A8A9;
+		}
+		*/
+		Volume0Serial:before {
+			content: "Volume 0 Serial:";
+			display: inline;
+			letter-spacing: 1pt;
+			line-height: 1;
+			word-spacing: 2pt;
+			font-weight: bold;
+			font-size: 12px;
+			font-family: verdana, sans-serif;
+			text-align: right;
+			text-decoration: underline;
+			padding: 2px 10px 0 2px;
+			margin: 2px 0 4px 0;
+		}
+
+	Volume0Created {
+		color: maroon;	
+	}
+		Volume0Created:before {
+			content: "Volume 0 Created:";
+			display: inline;
+			letter-spacing: 1pt;
+			line-height: 1;
+			word-spacing: 2pt;
+			font-weight: bold;
+			font-size: 12px;
+			font-family: verdana, sans-serif;
+			text-align: right;
+			text-decoration: underline;
+			padding: 2px 4px 0 2px;
+			margin: 2px 0 4px 0;
+		}
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Volume0Created:after {
+			content: " (Note: Volume created timestamp)";
+			color: #A6A8A9;
+		}
+		*/
+			
+	Volume1Name:before {
+		content: "Volume 1 Name:";
 		display: inline;
 		letter-spacing: 1pt;
 		line-height: 1;
@@ -422,8 +461,8 @@ Container {
 		margin: 2px 0 4px 0;
 	}
 	
-	MachineID:before {
-		content: "MachineID:";
+	Volume1Serial:before {
+		content: "Volume 1 Serial:";
 		display: inline;
 		letter-spacing: 1pt;
 		line-height: 1;
@@ -436,23 +475,8 @@ Container {
 		padding: 2px 10px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
-	MachineMACAddress:before {
-		content: "Machine MAC Address:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	MACVendor:before {
+
+	Volume1Created:before {
 		content: "MAC Vendor:";
 		display: inline;
 		letter-spacing: 1pt;
@@ -463,41 +487,66 @@ Container {
 		font-family: verdana, sans-serif;
 		text-align: right;
 		text-decoration: underline;
-		padding: 2px 10px 0 2px;
+		padding: 2px 18px 0 2px;
 		margin: 2px 0 4px 0;
 	}
-	
-		MACVendor:after {
-			content: " (vendor not included in source .lnk file, auto-resolved by LECmd for end-user upon parsing)";
+
+	div {
+	    -webkit-column-count: 3; /* Chrome, Safari, Opera */
+	    -moz-column-count: 3;    /* Firefox */
+	    column-count: 3;
+	} 
+		
+	Directories {
+		line-height: 1.4;
+		background-image: url(directories.png);
+		background-repeat: no-repeat;
+		background-position: left top;
+		background-size: 30px 44px
+	}
+		Directories:before {
+			content: "Directories:";
+			display: inline;
+			letter-spacing: 1pt;
+			font-weight: bold;
+			font-size: 12px;
+			font-family: verdana, sans-serif;
+			text-align: right;
+			text-decoration: underline;
+			padding: 2px 10px 0 2px;
+			margin: 2px 0 4px 0;
+		}
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		Directories:after {
+			content: " (Note: A comma separated list of all directories accessed by the executable)";
 			color: #A6A8A9;
 		}
-	
-	TrackerCreatedOn:before {
-		content: "Tracker Created On:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
+		*/
+
+	FilesLoaded{
+		line-height: 1.4;
+		background-image: url(filesloaded.png);
+		background-repeat: no-repeat;
+		background-position: left top;
+		background-size: 30px 44px
 	}
-	
-	ExtraBlocksPresent:before {
-		content: "Extra Blocks Present:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
+		FilesLoaded:before {
+			content: "Files Loaded:";
+			display: inline;
+			letter-spacing: 1pt;
+			line-height: 1;
+			word-spacing: 2pt;
+			font-weight: bold;
+			font-size: 12px;
+			font-family: verdana, sans-serif;
+			text-align: right;
+			text-decoration: underline;
+			padding: 2px 10px 0 2px;
+			margin: 2px 0 4px 0;
+		}
+		/* Remove comment tags to show a note on report that matches hover tool tip
+		FilesLoaded:after {
+			content: " (Note: A comma separated list of all files that were loaded by the executable)";
+			color: #A6A8A9;
+		}
+		*/

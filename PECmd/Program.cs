@@ -365,8 +365,17 @@ namespace PECmd
                             Directory.CreateDirectory(outDir);
                         }
 
-                        File.WriteAllText(Path.Combine(outDir, "normalize.css"), Resources.normalize);
-                        File.WriteAllText(Path.Combine(outDir, "style.css"), Resources.style);
+                        var styleDir = Path.Combine(outDir, "styles");
+                        if (Directory.Exists(styleDir) == false)
+                        {
+                            Directory.CreateDirectory(styleDir);
+                        }
+
+                        File.WriteAllText(Path.Combine(styleDir, "normalize.css"), Resources.normalize);
+                        File.WriteAllText(Path.Combine(styleDir, "style.css"), Resources.style);
+
+                        Resources.directories.Save(Path.Combine(styleDir, "directories.png"));
+                        Resources.filesloaded.Save(Path.Combine(styleDir, "filesloaded.png"));
 
                         var outFile = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory, outDir,
                             "index.xhtml");
@@ -381,8 +390,8 @@ namespace PECmd
 
                         xml.WriteStartDocument();
 
-                        xml.WriteProcessingInstruction("xml-stylesheet", "href=\"normalize.css\"");
-                        xml.WriteProcessingInstruction("xml-stylesheet", "href=\"style.css\"");
+                        xml.WriteProcessingInstruction("xml-stylesheet", "href=\"styles/normalize.css\"");
+                        xml.WriteProcessingInstruction("xml-stylesheet", "href=\"styles/style.css\"");
 
                         xml.WriteStartElement("document");
                     }
@@ -424,11 +433,28 @@ namespace PECmd
                         xml?.WriteElementString("PreviousRun5", $"{o.PreviousRun5}");
                         xml?.WriteElementString("PreviousRun6", $"{o.PreviousRun6}");
 
-                        xml?.WriteElementString("ExecutableName", o.ExecutableName);
+                        xml?.WriteStartElement("ExecutableName");
+                        xml?.WriteAttributeString("title", "Note: The name of the executable tracked by the pf file");
+                        xml?.WriteString(o.ExecutableName);
+                        xml?.WriteEndElement();
+
                         xml?.WriteElementString("RunCount", $"{o.RunCount}");
-                        xml?.WriteElementString("Size", $"{o.Size}");
-                        xml?.WriteElementString("Hash", o.Hash);
-                        xml?.WriteElementString("Version", o.Version);
+
+                        xml?.WriteStartElement("Size");
+                        xml?.WriteAttributeString("title", "Note: The size of the executable in bytes");
+                        xml?.WriteString(o.Size);
+                        xml?.WriteEndElement();
+
+                        xml?.WriteStartElement("Hash");
+                        xml?.WriteAttributeString("title", "Note: The calculated hash for the pf file that should match the hash in the source file name");
+                        xml?.WriteString(o.Hash);
+                        xml?.WriteEndElement();
+
+                        xml?.WriteStartElement("Version");
+                        xml?.WriteAttributeString("title", "Note: The operating system that generated the prefetch file");
+                        xml?.WriteString(o.Version);
+                        xml?.WriteEndElement();
+
                         xml?.WriteElementString("Note", o.Note);
 
                         xml?.WriteElementString("Volume0Name", o.Volume0Name);
@@ -439,8 +465,16 @@ namespace PECmd
                         xml?.WriteElementString("Volume1Serial", o.Volume1Serial);
                         xml?.WriteElementString("Volume1Created", o.Volume1Created);
 
-                        xml?.WriteElementString("Directories", o.Directories);
-                        xml?.WriteElementString("FilesLoaded", o.FilesLoaded);
+
+                        xml?.WriteStartElement("Directories");
+                        xml?.WriteAttributeString("title", "A comma separated list of all directories accessed by the executable");
+                        xml?.WriteString(o.Directories);
+                        xml?.WriteEndElement();
+
+                        xml?.WriteStartElement("FilesLoaded");
+                        xml?.WriteAttributeString("title", "A comma separated list of all files that were loaded by the executable");
+                        xml?.WriteString(o.FilesLoaded);
+                        xml?.WriteEndElement();
 
                         xml?.WriteEndElement();
 
