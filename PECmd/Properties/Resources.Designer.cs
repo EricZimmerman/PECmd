@@ -61,6 +61,26 @@ namespace PECmd.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap directories {
+            get {
+                object obj = ResourceManager.GetObject("directories", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap filesloaded {
+            get {
+                object obj = ResourceManager.GetObject("filesloaded", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to /*! normalize.css v3.0.3 | MIT License | github.com/necolas/normalize.css */
         ///
         ////**
@@ -93,12 +113,18 @@ namespace PECmd.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to /* Report styling created by: Devon Ackerman
-        ///					  devon@aeiforensics.com
-        ///                    Last Updated: 2016.02.16 
+        ///   Looks up a localized string similar to /* Report styling written by: Devon Ackerman
+        ///                           Crafted for PECmd
+        ///                      devon@aeiforensics.com
+        ///                    Last Updated: 2016.03.04
         ///-------------------------------------------- */
         ///
-        ///Wrapper_Forensicator {
+        ////* If value is empty, then hide container */	
+        ///:empty {
+        ///	display:none !important;
+        ///}
+        ///
+        ///Container {
         ///	width: 1400px;
         ///	height: auto;
         ///	border: medium #146B99 solid;
@@ -106,15 +132,7 @@ namespace PECmd.Properties {
         ///	overflow: auto;
         ///	min-width: 50px;  /* min-width  */
         ///	min-height: 50px; /* min-height */
-        ///	display: block;
-        ///	padding: 0;
-        ///	margin: 10px;
-        ///	background-color: #D9ECFF;
-        ///}
-        ///
-        ///	Forensicator {
-        ///		letter-spacing: 1pt;
-        ///		line-height: 1; [rest of string was truncated]&quot;;.
+        ///	d [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {
