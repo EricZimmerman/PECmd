@@ -140,7 +140,7 @@ namespace PECmd
                          @" PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf"" --json ""D:\jsonOutput"" --jsonpretty" +
                          "\r\n\t " +
                          @" PECmd.exe -d ""C:\Temp"" -k ""system32, fonts""" + "\r\n\t " +
-                         @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp"" --local --json c:\temp\json" +
+                         @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp\prefetch_out.tsv"" --local --json c:\temp\json" +
                          "\r\n\t " +
 //                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa" + "\r\n\t " +
 //                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa -m 15 -x 22" + "\r\n\t " +

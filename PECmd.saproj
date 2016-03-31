@@ -4,7 +4,7 @@
     <CompanyName>Eric Zimmerman</CompanyName>
     <Configuration Name="Release">
         <Options>
-            <ExceptionReporting EmailToBeNotified="saericzimmerman@gmail.com" ReportExceptions="1" Template="res:{SmartExceptions}.AdvancedUI.dll" />
+            <ExceptionReporting EmailToBeNotified="saericzimmerman@gmail.com" ReportExceptions="1" Template="res:{SmartExceptions}.1033.dll" />
             <FeatureUsageReporting Template="res:SmartUsageWithUIConsentFirstRun1033.dll" />
             <StringsEncoding />
             <StrongNameSigning />
@@ -234,11 +234,6 @@
             <Assembly AssemblyName="CsvHelper, Culture=neutral, PublicKeyToken=8c4959082be5c823">
                 <Merging />
                 <Embedding Embed="1" />
-            </Assembly>
-            <Assembly AssemblyName="SmartExceptionsWithEmailCollection, Culture=neutral, PublicKeyToken=7f465a1c156d4d57">
-                <Merging>
-                    <Pruning />
-                </Merging>
             </Assembly>
         </Assemblies>
     </Configuration>
