@@ -235,6 +235,11 @@
                 <Merging />
                 <Embedding Embed="1" />
             </Assembly>
+            <Assembly AssemblyName="SmartExceptionsWithEmailCollection, Culture=neutral, PublicKeyToken=7f465a1c156d4d57">
+                <Merging>
+                    <Pruning />
+                </Merging>
+            </Assembly>
         </Assemblies>
     </Configuration>
 </SmartAssemblyProject>
