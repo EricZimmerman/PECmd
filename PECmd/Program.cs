@@ -416,7 +416,7 @@ namespace PECmd
                                 var t = new CsvOutTl();
 
                                 var exePath =
-                                    processedFile.Filenames.SingleOrDefault(
+                                    processedFile.Filenames.FirstOrDefault(
                                         y => y.EndsWith(processedFile.Header.ExecutableFilename));
 
                                 if (exePath == null)
@@ -433,7 +433,7 @@ namespace PECmd
                         catch (Exception ex)
                         {
                             _logger.Error(
-                                $"Error writing time line record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
+                                $"Error getting time line record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
 
                         }
 
