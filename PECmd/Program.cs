@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Xml;
+using Exceptionless;
 using Fclp;
 using Fclp.Internals.Extensions;
 using Microsoft.Win32;
@@ -25,10 +26,9 @@ namespace PECmd
 {
     internal class Program
     {
-        private const string SSLicenseFile = @"D:\SSLic.txt";
         private static Logger _logger;
 
-        private static string _preciseTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff K";
+        private static string _preciseTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff";
 
         private static HashSet<string> _keywords;
         private static FluentCommandLineParser<ApplicationArguments> _fluentCommandLineParser;
@@ -52,7 +52,7 @@ namespace PECmd
 
         private static void Main(string[] args)
         {
-            Licensing.RegisterLicenseFromFileIfExists(SSLicenseFile);
+            ExceptionlessClient.Default.Startup("x3MPpeQSBUUsXl3DjekRQ9kYjyN3cr5JuwdoOBpZ");
 
             SetupNLog();
 
@@ -115,20 +115,20 @@ namespace PECmd
                 .WithDescription(
                     "When exporting to json, use a more human readable layout\r\n").SetDefault(false);
 
-            _fluentCommandLineParser.Setup(arg => arg.LocalTime)
-                .As("local")
-                .WithDescription(
-                    "Display dates using timezone of machine PECmd is running on vs. UTC\r\n").SetDefault(false);
+//            _fluentCommandLineParser.Setup(arg => arg.LocalTime)
+//                .As("local")
+//                .WithDescription(
+//                    "Display dates using timezone of machine PECmd is running on vs. UTC\r\n").SetDefault(false);
 
             _fluentCommandLineParser.Setup(arg => arg.DateTimeFormat)
 .As("dt")
 .WithDescription(
-  "The custom date/time format to use when displaying time stamps. Default is: yyyy-MM-dd HH:mm:ss K").SetDefault("yyyy-MM-dd HH:mm:ss K");
+  "The custom date/time format to use when displaying timestamps. See https://goo.gl/CNVq0k for options. Default is: yyyy-MM-dd HH:mm:ss").SetDefault("yyyy-MM-dd HH:mm:ss");
 
             _fluentCommandLineParser.Setup(arg => arg.PreciseTimestamps)
    .As("mp")
    .WithDescription(
-       "When true, display higher precision for time stamps. Default is false").SetDefault(false);
+       "When true, display higher precision for timestamps. Default is false").SetDefault(false);
 
 
             var header =
@@ -142,8 +142,6 @@ namespace PECmd
                          @" PECmd.exe -d ""C:\Temp"" -k ""system32, fonts""" + "\r\n\t " +
                          @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp"" --local --json c:\temp\json" +
                          "\r\n\t " +
-//                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa" + "\r\n\t " +
-//                         @" PECmd.exe -f ""C:\Temp\someOtherFile.txt"" --lr cc -sa -m 15 -x 22" + "\r\n\t " +
                          @" PECmd.exe -d ""C:\Windows\Prefetch""" + "\r\n\t " +
                          "\r\n\t" +
                          "  Short options (single letter) are prefixed with a single dash. Long commands are prefixed with two dashes\r\n";
@@ -331,7 +329,7 @@ namespace PECmd
 
                         if (Directory.Exists(_fluentCommandLineParser.Object.CsvDirectory) == false)
                         {
-                            _logger.Warn($"Path to '{_fluentCommandLineParser.Object.CsvDirectory}' doesn't exist. Creating...");
+                            _logger.Warn($"Path to '{_fluentCommandLineParser.Object.CsvDirectory}' does not exist. Creating...");
                             Directory.CreateDirectory(_fluentCommandLineParser.Object.CsvDirectory);
                         }
 
@@ -359,6 +357,12 @@ namespace PECmd
 
                     if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
                     {
+                        if (Directory.Exists(_fluentCommandLineParser.Object.JsonDirectory) == false)
+                        {
+                            _logger.Warn($"'{_fluentCommandLineParser.Object.JsonDirectory} does not exist. Creating...'");
+                            Directory.CreateDirectory(_fluentCommandLineParser.Object.JsonDirectory);
+                        }
+
                         _logger.Warn($"Saving json output to '{_fluentCommandLineParser.Object.JsonDirectory}'");
                     }
 
@@ -366,6 +370,12 @@ namespace PECmd
 
                     if (_fluentCommandLineParser.Object.xHtmlDirectory?.Length > 0)
                     {
+                        if (Directory.Exists(_fluentCommandLineParser.Object.xHtmlDirectory) == false)
+                        {
+                            _logger.Warn($"'{_fluentCommandLineParser.Object.xHtmlDirectory} does not exist. Creating...'");
+                            Directory.CreateDirectory(_fluentCommandLineParser.Object.xHtmlDirectory);
+                        }
+
                         var outDir = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory,
                             $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_PECmd_Output_for_{_fluentCommandLineParser.Object.xHtmlDirectory.Replace(@":\", "_").Replace(@"\", "_")}");
 
@@ -449,6 +459,7 @@ namespace PECmd
 
                         if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
                         {
+                         
                             SaveJson(processedFile, _fluentCommandLineParser.Object.JsonPretty,
                                 _fluentCommandLineParser.Object.JsonDirectory);
                         }
@@ -694,7 +705,7 @@ namespace PECmd
                 .GetField(value.ToString())
                 .GetCustomAttributes(typeof(DescriptionAttribute), false)
                 .SingleOrDefault() as DescriptionAttribute;
-            return attribute == null ? value.ToString() : attribute.Description;
+            return attribute?.Description;
         }
 
         private static IPrefetch LoadFile(string pfFile)
@@ -967,15 +978,13 @@ namespace PECmd
         public string Keywords { get; set; }
         public string JsonDirectory { get; set; }
         public bool JsonPretty { get; set; }
-        public bool LocalTime { get; set; }
+        public bool LocalTime { get; set; } 
         public string CsvDirectory { get; set; }
         public bool Quiet { get; set; }
 
         public string DateTimeFormat { get; set; }
 
         public bool PreciseTimestamps { get; set; }
-
-
 
         public string xHtmlDirectory { get; set; }
     }
