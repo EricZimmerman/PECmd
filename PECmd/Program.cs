@@ -192,7 +192,7 @@ namespace PECmd
 
             if (_fluentCommandLineParser.Object.Keywords?.Length > 0)
             {
-                var kws = _fluentCommandLineParser.Object.Keywords.Split(new[] {','},
+                var kws = _fluentCommandLineParser.Object.Keywords.ToLowerInvariant().Split(new[] {','},
                     StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var kw in kws)
