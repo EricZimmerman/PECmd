@@ -342,11 +342,13 @@ namespace PECmd
                             csv = new CsvWriter(streamWriter);
                             csv.Configuration.Delimiter = $"{'\t'}";
                             csv.WriteHeader(typeof(CsvOut));
+                            csv.NextRecord();
 
                             streamWriterTl = new StreamWriter(outFileTl);
                             csvTl = new CsvWriter(streamWriterTl);
                             csvTl.Configuration.Delimiter = $"{'\t'}";
                             csvTl.WriteHeader(typeof(CsvOutTl));
+                            csvTl.NextRecord();
                         }
                         catch (Exception ex)
                         {
@@ -438,6 +440,7 @@ namespace PECmd
                                 t.RunTime = dateTimeOffset.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
 
                                 csvTl?.WriteRecord(t);
+                                csvTl?.NextRecord();
                             }
                         }
                         catch (Exception ex)
@@ -450,6 +453,7 @@ namespace PECmd
                         try
                         {
                             csv?.WriteRecord(o);
+                            csv?.NextRecord();
                         }
                         catch (Exception ex)
                         {
