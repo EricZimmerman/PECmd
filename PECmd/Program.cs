@@ -37,6 +37,8 @@ namespace PECmd
 
         private static List<IPrefetch> _processedFiles;
 
+        private static string _exportExt = "tsv";
+
         private static bool CheckForDotnet46()
         {
             using (
@@ -114,6 +116,11 @@ namespace PECmd
                 .As("pretty")
                 .WithDescription(
                     "When exporting to json, use a more human readable layout\r\n").SetDefault(false);
+
+            _fluentCommandLineParser.Setup(arg => arg.CsvSeparator)
+                .As("cs")
+                .WithDescription(
+                    "When true, use comma instead of tab for field separator. Default is false").SetDefault(false);
 
 //            _fluentCommandLineParser.Setup(arg => arg.LocalTime)
 //                .As("local")
@@ -201,7 +208,10 @@ namespace PECmd
                 }
             }
 
-
+            if (_fluentCommandLineParser.Object.CsvSeparator)
+            {
+                _exportExt = "csv";
+            }
 
             _logger.Info(header);
             _logger.Info("");
@@ -248,8 +258,6 @@ namespace PECmd
                 _logger.Info("");
 
                 string[] pfFiles = null;
-
-              
 
                 try
                 {
@@ -321,8 +329,8 @@ namespace PECmd
 
                     if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
                     {
-                        var outName = $"{DateTimeOffset.Now.ToString("yyyyMMddHHmmss")}_PECmd_Output.tsv";
-                        var outNameTl = $"{DateTimeOffset.Now.ToString("yyyyMMddHHmmss")}_PECmd_Output_Timeline.tsv";
+                        var outName = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output.{_exportExt}";
+                        var outNameTl = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output_Timeline.{_exportExt}";
                         var outFile = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outName);
                         var outFileTl = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outNameTl);
 
@@ -340,13 +348,19 @@ namespace PECmd
                         {
                             streamWriter = new StreamWriter(outFile);
                             csv = new CsvWriter(streamWriter);
-                            csv.Configuration.Delimiter = $"{'\t'}";
+                            if (_fluentCommandLineParser.Object.CsvSeparator == false)
+                            {
+                                csv.Configuration.Delimiter = "\t";
+                            }
                             csv.WriteHeader(typeof(CsvOut));
                             csv.NextRecord();
 
                             streamWriterTl = new StreamWriter(outFileTl);
                             csvTl = new CsvWriter(streamWriterTl);
-                            csvTl.Configuration.Delimiter = $"{'\t'}";
+                            if (_fluentCommandLineParser.Object.CsvSeparator == false)
+                            {
+                                csvTl.Configuration.Delimiter = "\t";
+                            }
                             csvTl.WriteHeader(typeof(CsvOutTl));
                             csvTl.NextRecord();
                         }
@@ -379,7 +393,7 @@ namespace PECmd
                         }
 
                         var outDir = Path.Combine(_fluentCommandLineParser.Object.xHtmlDirectory,
-                            $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_PECmd_Output_for_{_fluentCommandLineParser.Object.xHtmlDirectory.Replace(@":\", "_").Replace(@"\", "_")}");
+                            $"{DateTimeOffset.UtcNow:yyyyMMddHHmmss}_PECmd_Output_for_{_fluentCommandLineParser.Object.xHtmlDirectory.Replace(@":\", "_").Replace(@"\", "_")}");
 
                         if (Directory.Exists(outDir) == false)
                         {
@@ -684,7 +698,7 @@ namespace PECmd
                 }
 
                 var outName =
-                    $"{DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")}_{Path.GetFileName(pf.SourceFilename)}.json";
+                    $"{DateTimeOffset.UtcNow:yyyyMMddHHmmss}_{Path.GetFileName(pf.SourceFilename)}.json";
                 var outFile = Path.Combine(outDir, outName);
 
 
@@ -991,5 +1005,7 @@ namespace PECmd
         public bool PreciseTimestamps { get; set; }
 
         public string xHtmlDirectory { get; set; }
+
+        public bool CsvSeparator { get; set; }
     }
 }
