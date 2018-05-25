@@ -100,7 +100,7 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.CsvDirectory)
                 .As("csv")
                 .WithDescription(
-                    "Directory to save CSV (tab separated) results to. Be sure to include the full path in double quotes");
+                    "Directory to save CSV results to. Be sure to include the full path in double quotes");
 
 //            _fluentCommandLineParser.Setup(arg => arg.XmlDirectory)
 //               .As("xml")
@@ -341,8 +341,8 @@ namespace PECmd
                             Directory.CreateDirectory(_fluentCommandLineParser.Object.CsvDirectory);
                         }
 
-                        _logger.Warn($"CSV (tab separated) output will be saved to '{outFile}'");
-                        _logger.Warn($"CSV time line (tab separated) output will be saved to '{outFileTl}'");
+                        _logger.Warn($"CSV output will be saved to '{outFile}'");
+                        _logger.Warn($"CSV time line output will be saved to '{outFileTl}'");
 
                         try
                         {
