@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
 using System.Text;
 using System.Xml;
 using Exceptionless;
@@ -50,6 +51,13 @@ namespace PECmd
 
                 return releaseKey >= 393295;
             }
+        }
+
+        public static bool IsAdministrator()
+        {
+            var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
         private static void Main(string[] args)
@@ -216,6 +224,12 @@ namespace PECmd
             _logger.Info(header);
             _logger.Info("");
             _logger.Info($"Command line: {string.Join(" ", Environment.GetCommandLineArgs().Skip(1))}");
+
+            if (IsAdministrator() == false)
+            {
+                _logger.Fatal("\r\nWarning: Administrator privileges not found!");
+            }
+
             _logger.Info("");
             _logger.Info($"Keywords: {string.Join(", ", _keywords)}");
             _logger.Info("");
