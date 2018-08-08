@@ -15,6 +15,7 @@ using Fclp.Internals.Extensions;
 using Microsoft.Win32;
 using NLog;
 using NLog.Config;
+using NLog.Fluent;
 using NLog.Targets;
 using PECmd.Properties;
 using Prefetch;
@@ -93,6 +94,11 @@ namespace PECmd
                 .As('k')
                 .WithDescription(
                     "Comma separated list of keywords to highlight in output. By default, 'temp' and 'tmp' are highlighted. Any additional keywords will be added to these.");
+
+            _fluentCommandLineParser.Setup(arg => arg.OutFile)
+                .As('o')
+                .WithDescription(
+                    "When specified, save prefetch file bytes to the given path. Useful to look at decompressed Win10 files");
 
             _fluentCommandLineParser.Setup(arg => arg.Quiet)
                 .As('q')
@@ -250,8 +256,29 @@ namespace PECmd
                 try
                 {
                     pf = LoadFile(_fluentCommandLineParser.Object.File);
+
                     if (pf != null)
                     {
+
+                        if (_fluentCommandLineParser.Object.OutFile.IsNullOrEmpty() == false)
+                        {
+                            try
+                            {
+                                if (Directory.Exists(Path.GetDirectoryName(_fluentCommandLineParser.Object.OutFile)) ==
+                                    false)
+                                {
+                                    Directory.CreateDirectory(
+                                        Path.GetDirectoryName(_fluentCommandLineParser.Object.OutFile));
+                                }
+                                PrefetchFile.SavePrefetch(_fluentCommandLineParser.Object.OutFile,pf);
+                                _logger.Info($"Saved prefetch bytes to '{_fluentCommandLineParser.Object.OutFile}'");
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.Error($"Unable to save prefetch file. Error: {e.Message}");
+                            }
+                        }
+
                         _processedFiles.Add(pf);
                     }
                 }
@@ -300,6 +327,7 @@ namespace PECmd
                 foreach (var file in pfFiles)
                 {
                     var pf = LoadFile(file);
+                    
                     if (pf != null)
                     {
                         _processedFiles.Add(pf);
@@ -1012,6 +1040,7 @@ namespace PECmd
         public bool JsonPretty { get; set; }
         public bool LocalTime { get; set; } 
         public string CsvDirectory { get; set; }
+        public string OutFile { get; set; }
         public bool Quiet { get; set; }
 
         public string DateTimeFormat { get; set; }
