@@ -1,4 +1,0 @@
-﻿libz add --libz Other.libz --include *.dll --move
-libz inject-libz -assembly .\PECmd.exe --libz .\Other.libz --move
-libz instrument --assembly .\PECmd.exe --libz-resources
-(sign exe)
