@@ -5,25 +5,23 @@
 -------------------------------------------- */
 
 /* If value is empty, then hide container */	
-:empty {
-	display:none !important;
-}
+:empty { display: none !important; }
 
 Container {
-	width: 1400px;
-	height: auto;
-	border: medium #146B99 solid;
-	resize: both;
-	overflow: auto;
-	min-width: 50px;  /* min-width  */
-	min-height: 50px; /* min-height */
-	display: block;
-	padding: 0;
-	margin: 10px;
 	background-color: #E9F0F4;
+	border: medium #146B99 solid;
+	display: block;
+	height: auto;
+	margin: 10px;
+	min-height: 50px; /* min-height */
+	min-width: 50px; /* min-width  */
+	overflow: auto;
+	padding: 0;
+	resize: both;
+	width: 1400px;
 }
 
-	/* Remove comment tags to show .PF before and above path statement
+/* Remove comment tags to show .PF before and above path statement
 	Container:before {
 	  display: block;
 	  width: auto;
@@ -37,513 +35,526 @@ Container {
 	}
 	*/
 
-	SourceFile {
-		display: block;
-		width: auto;
-		font-weight: bold;
-		font-size: 16px;
-		background-color: #146B99;
-		color: #FFBD6F;
-		padding: 0;
-		margin: 0;
-	}
-	    
-	SourceCreated, SourceModified, SourceAccessed, LastRun, PreviousRun0, PreviousRun1, PreviousRun2, PreviousRun3, PreviousRun4, PreviousRun5, PreviousRun6, ExecutableName, RunCount, Size, Hash, Version, Note, Volume0Name, Volume0Serial, Volume0Created, Volume1Name, Volume1Serial, Volume1Created, Directories, FilesLoaded {
-		display: block;
-		width: auto;
-		color: #043F5F;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: normal;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: left;
-		padding: 2px 0 0 34px;
-		margin: 4px 0 4px 0;
-	}
-	
-	SourceCreated:before {
-		content: "Source Created:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 20px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show (UTC) after timestamp
+SourceFile {
+	background-color: #146B99;
+	color: #FFBD6F;
+	display: block;
+	font-size: 16px;
+	font-weight: bold;
+	margin: 0;
+	padding: 0;
+	width: auto;
+}
+
+SourceCreated, SourceModified, SourceAccessed, LastRun, PreviousRun0, PreviousRun1, PreviousRun2, PreviousRun3, PreviousRun4, PreviousRun5, PreviousRun6, ExecutableName, RunCount, Size, Hash, Version, Note, Volume0Name, Volume0Serial, Volume0Created, Volume1Name, Volume1Serial, Volume1Created, Directories, FilesLoaded {
+	color: #043F5F;
+	display: block;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: normal;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 4px 0 4px 0;
+	padding: 2px 0 0 34px;
+	text-align: left;
+	width: auto;
+	word-spacing: 2pt;
+}
+
+SourceCreated:before {
+	content: "Source Created:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 20px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show (UTC) after timestamp
 		SourceCreated:after {
 			content: " (UTC)";
 			color: #A6A8A9;
 		}
 		*/
 
-		SourceCreated:hover {
-			content: " (UTC)";
-			color: #A6A8A9;
-		}
-	
-	SourceModified:before {
-		content: "Source Modified:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 15px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show (UTC) after timestamp
+SourceCreated:hover {
+	color: #A6A8A9;
+	content: " (UTC)";
+}
+
+SourceModified:before {
+	content: "Source Modified:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 15px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show (UTC) after timestamp
 		SourceCreated:after {
 			content: " (UTC)";
 			color: #A6A8A9;
 		}
 		*/
-	
-	SourceAccessed:before {
-		content: "Source Accessed:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show (UTC) after timestamp
+
+SourceAccessed:before {
+	content: "Source Accessed:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show (UTC) after timestamp
 		SourceCreated:after {
 			content: " (UTC)";
 			color: #A6A8A9;
 		}
 		*/
-	
-	LastRun:before {
-		content: "Last Run:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 73px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show (UTC) after timestamp
+
+LastRun:before {
+	content: "Last Run:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 73px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show (UTC) after timestamp
 		LastRun:after {
 			content: " (UTC)";
 			color: #A6A8A9;
 		}
 		*/
-	
-	PreviousRun0:before {
-		content: "Previous Run 0:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	PreviousRun1:before {
-		content: "Previous Run 1:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	PreviousRun2:before {
-		content: "Previous Run 2:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	PreviousRun3:before {
-		content: "Previous Run 3:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	PreviousRun4:before {
-		content: "Previous Run 4:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	PreviousRun5:before {
-		content: "Previous Run 5:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	PreviousRun6:before {
-		content: "Previous Run 6:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	ExecutableName:before {
-		content: "Executable Name:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+
+PreviousRun0:before {
+	content: "Previous Run 0:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+PreviousRun1:before {
+	content: "Previous Run 1:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+PreviousRun2:before {
+	content: "Previous Run 2:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+PreviousRun3:before {
+	content: "Previous Run 3:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+PreviousRun4:before {
+	content: "Previous Run 4:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+PreviousRun5:before {
+	content: "Previous Run 5:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+PreviousRun6:before {
+	content: "Previous Run 6:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+ExecutableName:before {
+	content: "Executable Name:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		RunCount:after {
 			content: " (Note: The name of the executable tracked by the pf file";
 			color: #A6A8A9;
 		}
 		*/
-	RunCount:before {
-		content: "Run Count:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
 
-	Size:before {
-		content: "Size:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+RunCount:before {
+	content: "Run Count:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+Size:before {
+	content: "Size:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Size:after {
 			content: " (Note: size in bytes of executable)";
 			color: #A6A8A9;
 		}
 		*/
-	
-	Hash:before {
-		content: "Hash:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+
+Hash:before {
+	content: "Hash:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Hash:after {
 			content: " (Note: The calculated hash for the pf file that should match the hash in the source file name)";
 			color: #A6A8A9;
 		}
 		*/
-	
-	Version:before {
-		content: "Version:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+
+Version:before {
+	content: "Version:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Version:after {
 			content: " (Note: The operating system that generated the prefetch file)";
 			color: #A6A8A9;
 		}
 		*/
-	
-	Note:before {
-		content: "Note:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-		Note:after {
-			content: " (Note: Populated when >2 volumes are identified in a prefetch file. This is rare.)";
-			color: #A6A8A9;
-		}
-	
-	Volume0Name {
-		color: maroon;	
-	}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+
+Note:before {
+	content: "Note:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+Note:after {
+	color: #A6A8A9;
+	content: " (Note: Populated when >2 volumes are identified in a prefetch file. This is rare.)";
+}
+
+Volume0Name { color: maroon; }
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Volume0Name:after {
 			content: " (Note: The first volume name found)";
 			color: #A6A8A9;
 		}
 		*/
-		Volume0Name:before {
-			content: "Volume 0 Name:";
-			display: inline;
-			letter-spacing: 1pt;
-			line-height: 1;
-			word-spacing: 2pt;
-			font-weight: bold;
-			font-size: 12px;
-			font-family: verdana, sans-serif;
-			text-align: right;
-			text-decoration: underline;
-			padding: 2px 10px 0 2px;
-			margin: 2px 0 4px 0;
-		}
 
-	Volume0Serial {
-		color: maroon;	
-	}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+Volume0Name:before {
+	content: "Volume 0 Name:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+Volume0Serial { color: maroon; }
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Volume0Serial:after {
 			content: " (Note: Serial # of the first volume)";
 			color: #A6A8A9;
 		}
 		*/
-		Volume0Serial:before {
-			content: "Volume 0 Serial:";
-			display: inline;
-			letter-spacing: 1pt;
-			line-height: 1;
-			word-spacing: 2pt;
-			font-weight: bold;
-			font-size: 12px;
-			font-family: verdana, sans-serif;
-			text-align: right;
-			text-decoration: underline;
-			padding: 2px 10px 0 2px;
-			margin: 2px 0 4px 0;
-		}
 
-	Volume0Created {
-		color: maroon;	
-	}
-		Volume0Created:before {
-			content: "Volume 0 Created:";
-			display: inline;
-			letter-spacing: 1pt;
-			line-height: 1;
-			word-spacing: 2pt;
-			font-weight: bold;
-			font-size: 12px;
-			font-family: verdana, sans-serif;
-			text-align: right;
-			text-decoration: underline;
-			padding: 2px 4px 0 2px;
-			margin: 2px 0 4px 0;
-		}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+Volume0Serial:before {
+	content: "Volume 0 Serial:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+Volume0Created { color: maroon; }
+
+Volume0Created:before {
+	content: "Volume 0 Created:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 4px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Volume0Created:after {
 			content: " (Note: Volume created timestamp)";
 			color: #A6A8A9;
 		}
 		*/
-			
-	Volume1Name:before {
-		content: "Volume 1 Name:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
-	
-	Volume1Serial:before {
-		content: "Volume 1 Serial:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 10px 0 2px;
-		margin: 2px 0 4px 0;
-	}
 
-	Volume1Created:before {
-		content: "MAC Vendor:";
-		display: inline;
-		letter-spacing: 1pt;
-		line-height: 1;
-		word-spacing: 2pt;
-		font-weight: bold;
-		font-size: 12px;
-		font-family: verdana, sans-serif;
-		text-align: right;
-		text-decoration: underline;
-		padding: 2px 18px 0 2px;
-		margin: 2px 0 4px 0;
-	}
+Volume1Name:before {
+	content: "Volume 1 Name:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
 
-	div {
-	    -webkit-column-count: 3; /* Chrome, Safari, Opera */
-	    -moz-column-count: 3;    /* Firefox */
-	    column-count: 3;
-	} 
-		
-	Directories {
-		line-height: 1.4;
-		background-image: url(directories.png);
-		background-repeat: no-repeat;
-		background-position: left top;
-		background-size: 30px 44px
-	}
-		Directories:before {
-			content: "Directories:";
-			display: inline;
-			letter-spacing: 1pt;
-			font-weight: bold;
-			font-size: 12px;
-			font-family: verdana, sans-serif;
-			text-align: right;
-			text-decoration: underline;
-			padding: 2px 10px 0 2px;
-			margin: 2px 0 4px 0;
-		}
-		/* Remove comment tags to show a note on report that matches hover tool tip
+Volume1Serial:before {
+	content: "Volume 1 Serial:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+Volume1Created:before {
+	content: "MAC Vendor:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 18px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
+
+div {
+	-moz-column-count: 3; /* Firefox */
+	-webkit-column-count: 3; /* Chrome, Safari, Opera */
+	column-count: 3;
+}
+
+Directories {
+	background-image: url(directories.png);
+	background-position: left top;
+	background-repeat: no-repeat;
+	background-size: 30px 44px;
+	line-height: 1.4;
+}
+
+Directories:before {
+	content: "Directories:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+}
+
+/* Remove comment tags to show a note on report that matches hover tool tip
 		Directories:after {
 			content: " (Note: A comma separated list of all directories accessed by the executable)";
 			color: #A6A8A9;
 		}
 		*/
 
-	FilesLoaded{
-		line-height: 1.4;
-		background-image: url(filesloaded.png);
-		background-repeat: no-repeat;
-		background-position: left top;
-		background-size: 30px 44px
-	}
-		FilesLoaded:before {
-			content: "Files Loaded:";
-			display: inline;
-			letter-spacing: 1pt;
-			line-height: 1;
-			word-spacing: 2pt;
-			font-weight: bold;
-			font-size: 12px;
-			font-family: verdana, sans-serif;
-			text-align: right;
-			text-decoration: underline;
-			padding: 2px 10px 0 2px;
-			margin: 2px 0 4px 0;
-		}
+FilesLoaded {
+	background-image: url(filesloaded.png);
+	background-position: left top;
+	background-repeat: no-repeat;
+	background-size: 30px 44px;
+	line-height: 1.4;
+}
+
+FilesLoaded:before {
+	content: "Files Loaded:";
+	display: inline;
+	font-family: verdana, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	letter-spacing: 1pt;
+	line-height: 1;
+	margin: 2px 0 4px 0;
+	padding: 2px 10px 0 2px;
+	text-align: right;
+	text-decoration: underline;
+	word-spacing: 2pt;
+}
 		/* Remove comment tags to show a note on report that matches hover tool tip
 		FilesLoaded:after {
 			content: " (Note: A comma separated list of all files that were loaded by the executable)";
