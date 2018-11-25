@@ -38,20 +38,7 @@ namespace PECmd
 
         private static List<IPrefetch> _processedFiles;
 
-        private static string _exportExt = "tsv";
-
-        private static bool CheckForDotnet46()
-        {
-            using (
-                var ndpKey =
-                    RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                        .OpenSubKey("SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\"))
-            {
-                var releaseKey = Convert.ToInt32(ndpKey?.GetValue("Release"));
-
-                return releaseKey >= 393295;
-            }
-        }
+        
 
         public static bool IsAdministrator()
         {
@@ -70,11 +57,7 @@ namespace PECmd
 
             _logger = LogManager.GetCurrentClassLogger();
 
-            if (!CheckForDotnet46())
-            {
-                _logger.Warn(".net 4.6 not detected. Please install .net 4.6 and try again.");
-                return;
-            }
+         
 
             _fluentCommandLineParser = new FluentCommandLineParser<ApplicationArguments>
             {
@@ -102,7 +85,7 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.Quiet)
                 .As('q')
                 .WithDescription(
-                    "Do not dump full details about each file processed. Speeds up processing when using --json or --csv\r\n")
+                    "Do not dump full details about each file processed. Speeds up processing when using --json or --csv. Default is FALSE\r\n")
                 .SetDefault(false);
 
             _fluentCommandLineParser.Setup(arg => arg.JsonDirectory)
@@ -114,6 +97,10 @@ namespace PECmd
                 .As("csv")
                 .WithDescription(
                     "Directory to save CSV results to. Be sure to include the full path in double quotes");
+            _fluentCommandLineParser.Setup(arg => arg.CsvName)
+                .As("csvf")
+                .WithDescription("File name to save CSV formatted results to. When present, overrides default name");
+
 
             _fluentCommandLineParser.Setup(arg => arg.xHtmlDirectory)
                 .As("html")
@@ -123,12 +110,9 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.JsonPretty)
                 .As("pretty")
                 .WithDescription(
-                    "When exporting to json, use a more human readable layout\r\n").SetDefault(false);
+                    "When exporting to json, use a more human readable layout. Default is FALSE\r\n").SetDefault(false);
 
-            _fluentCommandLineParser.Setup(arg => arg.CsvSeparator)
-                .As("cs")
-                .WithDescription(
-                    "When true, use comma instead of tab for field separator. Default is true").SetDefault(true);
+       
 
             _fluentCommandLineParser.Setup(arg => arg.DateTimeFormat)
                 .As("dt")
@@ -139,7 +123,7 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.PreciseTimestamps)
                 .As("mp")
                 .WithDescription(
-                    "When true, display higher precision for timestamps. Default is false").SetDefault(false);
+                    "When true, display higher precision for timestamps. Default is FALSE").SetDefault(false);
 
 
             var header =
@@ -151,7 +135,7 @@ namespace PECmd
                          @" PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf"" --json ""D:\jsonOutput"" --jsonpretty" +
                          "\r\n\t " +
                          @" PECmd.exe -d ""C:\Temp"" -k ""system32, fonts""" + "\r\n\t " +
-                         @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp"" --json c:\temp\json" +
+                         @" PECmd.exe -d ""C:\Temp"" --csv ""c:\temp"" --csvf foo.csv --json c:\temp\json" +
                          "\r\n\t " +
                          @" PECmd.exe -d ""C:\Windows\Prefetch""" + "\r\n\t " +
                          "\r\n\t" +
@@ -212,10 +196,6 @@ namespace PECmd
                 }
             }
 
-            if (_fluentCommandLineParser.Object.CsvSeparator)
-            {
-                _exportExt = "csv";
-            }
 
             _logger.Info(header);
             _logger.Info("");
@@ -361,8 +341,22 @@ namespace PECmd
 
                     if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
                     {
-                        var outName = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output.{_exportExt}";
-                        var outNameTl = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output_Timeline.{_exportExt}";
+                        var outName = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output.csv";
+                        
+                        if (_fluentCommandLineParser.Object.CsvName.IsNullOrEmpty() == false)
+                        {
+                            outName = Path.GetFileName(_fluentCommandLineParser.Object.CsvName);
+                        }
+                        
+                        var outNameTl = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output_Timeline.csv";
+                        if (_fluentCommandLineParser.Object.CsvName.IsNullOrEmpty() == false)
+                        {
+                            
+                            outNameTl =
+                                $"{Path.GetFileNameWithoutExtension(_fluentCommandLineParser.Object.CsvName)}_Timeline{Path.GetExtension(_fluentCommandLineParser.Object.CsvName)}";
+                        }
+
+
                         var outFile = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outName);
                         var outFileTl = Path.Combine(_fluentCommandLineParser.Object.CsvDirectory, outNameTl);
 
@@ -381,20 +375,13 @@ namespace PECmd
                         {
                             streamWriter = new StreamWriter(outFile);
                             csv = new CsvWriter(streamWriter);
-                            if (_fluentCommandLineParser.Object.CsvSeparator == false)
-                            {
-                                csv.Configuration.Delimiter = "\t";
-                            }
+            
 
                             csv.WriteHeader(typeof(CsvOut));
                             csv.NextRecord();
 
                             streamWriterTl = new StreamWriter(outFileTl);
                             csvTl = new CsvWriter(streamWriterTl);
-                            if (_fluentCommandLineParser.Object.CsvSeparator == false)
-                            {
-                                csvTl.Configuration.Delimiter = "\t";
-                            }
 
                             csvTl.WriteHeader(typeof(CsvOutTl));
                             csvTl.NextRecord();
@@ -1131,6 +1118,7 @@ namespace PECmd
         public bool JsonPretty { get; set; }
         public bool LocalTime { get; set; }
         public string CsvDirectory { get; set; }
+        public string CsvName { get; set; }
         public string OutFile { get; set; }
         public bool Quiet { get; set; }
 
@@ -1140,6 +1128,5 @@ namespace PECmd
 
         public string xHtmlDirectory { get; set; }
 
-        public bool CsvSeparator { get; set; }
     }
 }
