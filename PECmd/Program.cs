@@ -653,7 +653,7 @@ namespace PECmd
             var volName = string.Empty;
             var volSerial = string.Empty;
 
-            if (pf.VolumeInformation.Count > 0)
+            if (pf.VolumeInformation?.Count > 0)
             {
                 var vol0Create = _fluentCommandLineParser.Object.LocalTime
                     ? pf.VolumeInformation[0].CreationTime.ToLocalTime()
@@ -756,7 +756,7 @@ namespace PECmd
                 csOut.PreviousRun6 = lrt.ToString(_fluentCommandLineParser.Object.DateTimeFormat);
             }
 
-            if (pf.VolumeInformation.Count > 1)
+            if (pf.VolumeInformation?.Count > 1)
             {
                 var vol1 = _fluentCommandLineParser.Object.LocalTime
                     ? pf.VolumeInformation[1].CreationTime.ToLocalTime()
@@ -766,16 +766,20 @@ namespace PECmd
                 csOut.Volume1Serial = pf.VolumeInformation[1].SerialNumber;
             }
 
-            if (pf.VolumeInformation.Count > 2)
+            if (pf.VolumeInformation?.Count > 2)
             {
                 csOut.Note = "File contains > 2 volumes! Please inspect output from main program for full details!";
             }
 
             var sbDirs = new StringBuilder();
-            foreach (var volumeInfo in pf.VolumeInformation)
+            if (pf.VolumeInformation != null)
             {
-                sbDirs.Append(string.Join(", ", volumeInfo.DirectoryNames));
+                foreach (var volumeInfo in pf.VolumeInformation)
+                {
+                    sbDirs.Append(string.Join(", ", volumeInfo.DirectoryNames));
+                }
             }
+            
 
             if (pf.ParsingError)
             {
