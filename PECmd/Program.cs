@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security.Principal;
 using System.Text;
 using System.Xml;
+using Alphaleonis.Win32.Filesystem;
 using Exceptionless;
 using Fclp;
 using Fclp.Internals.Extensions;
@@ -21,6 +22,9 @@ using Prefetch;
 using ServiceStack;
 using ServiceStack.Text;
 using CsvWriter = CsvHelper.CsvWriter;
+using Directory = Alphaleonis.Win32.Filesystem.Directory;
+using File = Alphaleonis.Win32.Filesystem.File;
+using Path = Alphaleonis.Win32.Filesystem.Path;
 using Version = Prefetch.Version;
 
 namespace PECmd
@@ -271,10 +275,45 @@ namespace PECmd
 
                 string[] pfFiles = null;
 
+
+                var f = new DirectoryEnumerationFilters();
+                f.InclusionFilter = fsei =>
+                {
+                    if (fsei.Extension.ToUpperInvariant() == ".PF" )
+                    {
+                        return true;
+                    }
+
+                    return false;
+                };
+
+                f.RecursionFilter = entryInfo => !entryInfo.IsMountPoint && !entryInfo.IsSymbolicLink;
+
+                f.ErrorFilter = (errorCode, errorMessage, pathProcessed) => true;
+
+                var dirEnumOptions =
+                    DirectoryEnumerationOptions.Files | DirectoryEnumerationOptions.Recursive |
+                    DirectoryEnumerationOptions.SkipReparsePoints | DirectoryEnumerationOptions.ContinueOnException |
+                    DirectoryEnumerationOptions.BasicSearch;
+
+                var files2 =
+                    Alphaleonis.Win32.Filesystem.Directory.EnumerateFileSystemEntries(_fluentCommandLineParser.Object.Directory, dirEnumOptions, f);
+
+
+
+
+
+
+
+
+
+
+
+
+
                 try
                 {
-                    pfFiles = Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",
-                        SearchOption.AllDirectories);
+                    pfFiles = files2.ToArray(); //Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",                        SearchOption.AllDirectories);
                 }
                 catch (UnauthorizedAccessException ua)
                 {
