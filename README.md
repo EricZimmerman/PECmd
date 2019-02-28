@@ -24,3 +24,5 @@ Prefetch Explorer Command Line
 
 
 # Note: If you are running less than Windows 8 you will NOT be able to process Windows 10 prefetch files.
+
+Open Source Development funding and support provided by the following contributors: [SANS Institute](http://sans.org/) and [SANS DFIR](http://dfir.sans.org/).
