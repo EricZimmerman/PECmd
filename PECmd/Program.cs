@@ -19,6 +19,7 @@ using NLog.Config;
 using NLog.Targets;
 using PECmd.Properties;
 using Prefetch;
+using RawCopy;
 using ServiceStack;
 using ServiceStack.Text;
 using CsvWriter = CsvHelper.CsvWriter;
@@ -42,7 +43,7 @@ namespace PECmd
 
         private static List<IPrefetch> _processedFiles;
 
-        
+        private const string VssDir = @"C:\___vssMount";
 
         public static bool IsAdministrator()
         {
@@ -127,7 +128,26 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.PreciseTimestamps)
                 .As("mp")
                 .WithDescription(
-                    "When true, display higher precision for timestamps. Default is FALSE").SetDefault(false);
+                    "When true, display higher precision for timestamps. Default is FALSE\r\n").SetDefault(false);
+
+            _fluentCommandLineParser.Setup(arg => arg.Vss)
+                .As("vss")
+                .WithDescription(
+                    "Process all Volume Shadow Copies that exist on drive specified by -f or -d . Default is FALSE")
+                .SetDefault(false);
+            _fluentCommandLineParser.Setup(arg => arg.Dedupe)
+                .As("dedupe")
+                .WithDescription(
+                    "Deduplicate -f or -d & VSCs based on SHA-1. First file found wins. Default is TRUE\r\n")
+                .SetDefault(true);
+
+            _fluentCommandLineParser.Setup(arg => arg.Debug)
+                .As("debug")
+                .WithDescription("Show debug information during processing").SetDefault(false);
+
+            _fluentCommandLineParser.Setup(arg => arg.Trace)
+                .As("trace")
+                .WithDescription("Show trace information during processing").SetDefault(false);
 
 
             var header =
@@ -210,6 +230,34 @@ namespace PECmd
                 _logger.Fatal("\r\nWarning: Administrator privileges not found!");
             }
 
+            if (_fluentCommandLineParser.Object.Debug)
+            {
+                foreach (var r in LogManager.Configuration.LoggingRules)
+                {
+                    r.EnableLoggingForLevel(LogLevel.Debug);
+                }
+
+                LogManager.ReconfigExistingLoggers();
+                _logger.Debug("Enabled debug messages...");
+            }
+
+            if (_fluentCommandLineParser.Object.Trace)
+            {
+                foreach (var r in LogManager.Configuration.LoggingRules)
+                {
+                    r.EnableLoggingForLevel(LogLevel.Trace);
+                }
+
+                LogManager.ReconfigExistingLoggers();
+                _logger.Trace("Enabled trace messages...");
+            }
+
+            if (_fluentCommandLineParser.Object.Vss & (Helper.IsAdministrator() == false))
+            {
+                _logger.Error("--vss is present, but administrator rights not found. Exiting\r\n");
+                return;
+            }
+
             _logger.Info("");
             _logger.Info($"Keywords: {string.Join(", ", _keywords)}");
             _logger.Info("");
@@ -217,6 +265,24 @@ namespace PECmd
             if (_fluentCommandLineParser.Object.PreciseTimestamps)
             {
                 _fluentCommandLineParser.Object.DateTimeFormat = _preciseTimeFormat;
+            }
+
+            if (_fluentCommandLineParser.Object.Vss)
+            {
+                string driveLetter;
+                if (_fluentCommandLineParser.Object.File.IsEmpty() == false)
+                {
+                    driveLetter = Path.GetPathRoot(Path.GetFullPath(_fluentCommandLineParser.Object.File))
+                        .Substring(0, 1);
+                }
+                else
+                {
+                    driveLetter = Path.GetPathRoot(Path.GetFullPath(_fluentCommandLineParser.Object.Directory))
+                        .Substring(0, 1);
+                }
+                
+                Helper.MountVss(driveLetter,VssDir);
+                Console.WriteLine();
             }
 
             _processedFiles = new List<IPrefetch>();
@@ -252,10 +318,33 @@ namespace PECmd
                                 _logger.Error($"Unable to save prefetch file. Error: {e.Message}");
                             }
                         }
-
-
+                        
                         _processedFiles.Add(pf);
                     }
+
+                    if (_fluentCommandLineParser.Object.Vss)
+                    {
+                        var vssDirs = Directory.GetDirectories(VssDir);
+
+                        var root = Path.GetPathRoot(Path.GetFullPath(_fluentCommandLineParser.Object.File));
+                        var stem = Path.GetFullPath(_fluentCommandLineParser.Object.File).Replace(root, "");
+
+                        foreach (var vssDir in vssDirs)
+                        {
+                            var newPath = Path.Combine(vssDir, stem);
+                            if (File.Exists(newPath))
+                            {
+                                pf = LoadFile(newPath);
+                                if (pf != null)
+                                {
+                                    _processedFiles.Add(pf);
+                                }
+                            }
+                        }
+                    }
+
+
+
                 }
                 catch (UnauthorizedAccessException ex)
                 {
@@ -265,7 +354,7 @@ namespace PECmd
                 catch (Exception ex)
                 {
                     _logger.Error(
-                        $"Error getting prefetch files in '{_fluentCommandLineParser.Object.Directory}'. Error: {ex.Message}");
+                        $"Error parsing prefetch file '{_fluentCommandLineParser.Object.File}'. Error: {ex.Message}");
                 }
             }
             else
@@ -273,7 +362,7 @@ namespace PECmd
                 _logger.Info($"Looking for prefetch files in '{_fluentCommandLineParser.Object.Directory}'");
                 _logger.Info("");
 
-                string[] pfFiles = null;
+                var pfFiles = new List<string>();
 
 
                 var f = new DirectoryEnumerationFilters();
@@ -297,23 +386,44 @@ namespace PECmd
                     DirectoryEnumerationOptions.BasicSearch;
 
                 var files2 =
-                    Alphaleonis.Win32.Filesystem.Directory.EnumerateFileSystemEntries(_fluentCommandLineParser.Object.Directory, dirEnumOptions, f);
-
-
-
-
-
-
-
-
-
-
-
+                    Directory.EnumerateFileSystemEntries(_fluentCommandLineParser.Object.Directory, dirEnumOptions, f);
 
 
                 try
                 {
-                    pfFiles = files2.ToArray(); //Directory.GetFiles(_fluentCommandLineParser.Object.Directory, "*.pf",                        SearchOption.AllDirectories);
+                    pfFiles.AddRange(files2);
+
+                    if (_fluentCommandLineParser.Object.Vss)
+                    {
+                        var vssDirs = Directory.GetDirectories(VssDir);
+
+                        foreach (var vssDir in vssDirs)
+                        {
+                            var root = Path.GetPathRoot(Path.GetFullPath(_fluentCommandLineParser.Object.Directory));
+                            var stem = Path.GetFullPath(_fluentCommandLineParser.Object.Directory).Replace(root, "");
+
+                            var target = Path.Combine(vssDir, stem);
+
+                            _logger.Fatal($"Searching 'VSS{target.Replace($"{VssDir}\\","")}' for prefetch files...");
+
+                            files2 =
+                                Directory.EnumerateFileSystemEntries(target, dirEnumOptions, f);
+
+                            try
+                            {
+                                pfFiles.AddRange(files2);
+
+                            }
+                            catch (Exception)
+                            {
+                                _logger.Fatal($"Could not access all files in '{_fluentCommandLineParser.Object.Directory}'");
+                                _logger.Error("");
+                                _logger.Fatal("Rerun the program with Administrator privileges to try again\r\n");
+                                //Environment.Exit(-1);
+                            }                    
+                        }
+
+                    }
                 }
                 catch (UnauthorizedAccessException ua)
                 {
@@ -328,14 +438,33 @@ namespace PECmd
                     return;
                 }
 
-                _logger.Info($"Found {pfFiles.Length:N0} Prefetch files");
+                _logger.Info($"Found {pfFiles.Count:N0} Prefetch files");
                 _logger.Info("");
 
                 var sw = new Stopwatch();
                 sw.Start();
 
+                var seenHashes = new HashSet<string>();
+
                 foreach (var file in pfFiles)
                 {
+
+                    if (_fluentCommandLineParser.Object.Dedupe)
+                    {
+                        using (var fs = new FileStream(file,FileMode.Open,FileAccess.Read))
+                        {
+                            var sha = Helper.GetSha1FromStream(fs,0);
+                            if (seenHashes.Contains(sha))
+                            {
+                                _logger.Debug($"Skipping '{file}' as a file with SHA-1 '{sha}' has already been processed");
+                                continue;
+                            }
+
+                            seenHashes.Add(sha);    
+                        }
+                        
+                    }
+                    
                     var pf = LoadFile(file);
 
                     if (pf != null)
@@ -352,7 +481,7 @@ namespace PECmd
                 }
 
                 _logger.Info(
-                    $"Processed {pfFiles.Length - _failedFiles.Count:N0} out of {pfFiles.Length:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
+                    $"Processed {pfFiles.Count - _failedFiles.Count:N0} out of {pfFiles.Count:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
 
                 if (_failedFiles.Count > 0)
                 {
@@ -502,6 +631,15 @@ namespace PECmd
                         {
                             var o = GetCsvFormat(processedFile);
 
+                            var pfname = o.SourceFilename;
+
+                            if (o.SourceFilename.StartsWith(VssDir))
+                            {
+                                pfname=$"VSS{o.SourceFilename.Replace($"{VssDir}\\", "")}";
+                            }
+
+                            o.SourceFilename = pfname;
+
                             try
                             {
                                 foreach (var dateTimeOffset in processedFile.LastRunTimes)
@@ -546,6 +684,8 @@ namespace PECmd
                                 SaveJson(processedFile, _fluentCommandLineParser.Object.JsonPretty,
                                     _fluentCommandLineParser.Object.JsonDirectory);
                             }
+
+                           
 
                             //XHTML
                             xml?.WriteStartElement("Container");
@@ -632,6 +772,18 @@ namespace PECmd
                 catch (Exception ex)
                 {
                     _logger.Error($"Error exporting data! Error: {ex.Message}");
+                }
+            }
+
+            if (_fluentCommandLineParser.Object.Vss)
+            {
+                if (Directory.Exists(VssDir))
+                {
+                    foreach (var directory in Directory.GetDirectories(VssDir))
+                    {
+                        Directory.Delete(directory);
+                    }
+                    Directory.Delete(VssDir,true,true);
                 }
             }
         }
@@ -872,9 +1024,16 @@ namespace PECmd
 
         private static IPrefetch LoadFile(string pfFile)
         {
+            var pfname = pfFile;
+
+            if (pfFile.StartsWith(VssDir))
+            {
+                pfname=$"VSS{pfFile.Replace($"{VssDir}\\", "")}";
+            }
+
             if (_fluentCommandLineParser.Object.Quiet == false)
             {
-                _logger.Warn($"Processing '{pfFile}'");
+                _logger.Warn($"Processing '{pfname}'");
                 _logger.Info("");
             }
 
@@ -888,8 +1047,8 @@ namespace PECmd
 
                 if (pf.ParsingError)
                 {
-                    _failedFiles.Add($"'{pfFile}' is corrupt and did not parse completely!");
-                    _logger.Fatal($"'{pfFile}' FILE DID NOT PARSE COMPLETELY!\r\n");
+                    _failedFiles.Add($"'{pfname}' is corrupt and did not parse completely!");
+                    _logger.Fatal($"'{pfname}' FILE DID NOT PARSE COMPLETELY!\r\n");
                 }
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
@@ -1063,7 +1222,7 @@ namespace PECmd
                 }
 
                 _logger.Info(
-                    $"---------- Processed '{pf.SourceFilename}' in {sw.Elapsed.TotalSeconds:N8} seconds ----------");
+                    $"---------- Processed '{pfname}' in {sw.Elapsed.TotalSeconds:N8} seconds ----------");
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
                 {
@@ -1075,17 +1234,17 @@ namespace PECmd
             catch (ArgumentNullException an)
             {
                 _logger.Error(
-                    $"Error opening '{pfFile}'.\r\n\r\nThis appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files");
+                    $"Error opening '{pfname}'.\r\n\r\nThis appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files");
                 _logger.Info("");
                 _failedFiles.Add(
-                    $"{pfFile} ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
+                    $"'{pfname}' ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error opening '{pfFile}'. Message: {ex.Message}");
+                _logger.Error($"Error opening '{pfname}'. Message: {ex.Message}");
                 _logger.Info("");
 
-                _failedFiles.Add($"{pfFile} ==> ({ex.Message})");
+                _failedFiles.Add($"'{pfname}' ==> ({ex.Message})");
             }
 
             return null;
@@ -1171,12 +1330,16 @@ namespace PECmd
         public string CsvName { get; set; }
         public string OutFile { get; set; }
         public bool Quiet { get; set; }
-
+        public bool Vss { get; set; }
+        public bool Dedupe { get; set; }
         public string DateTimeFormat { get; set; }
 
         public bool PreciseTimestamps { get; set; }
 
         public string xHtmlDirectory { get; set; }
+
+        public bool Debug { get; set; }
+        public bool Trace { get; set; }
 
     }
 }
