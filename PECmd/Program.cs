@@ -96,7 +96,10 @@ namespace PECmd
             _fluentCommandLineParser.Setup(arg => arg.JsonDirectory)
                 .As("json")
                 .WithDescription(
-                    "Directory to save json representation to. Use --pretty for a more human readable layout");
+                    "Directory to save json representation to.");
+            _fluentCommandLineParser.Setup(arg => arg.JsonName)
+                .As("jsonf")
+                .WithDescription("File name to save JSON formatted results to. When present, overrides default name");
 
             _fluentCommandLineParser.Setup(arg => arg.CsvDirectory)
                 .As("csv")
@@ -111,13 +114,13 @@ namespace PECmd
                 .As("html")
                 .WithDescription(
                     "Directory to save xhtml formatted results to. Be sure to include the full path in double quotes");
-
-            _fluentCommandLineParser.Setup(arg => arg.JsonPretty)
-                .As("pretty")
-                .WithDescription(
-                    "When exporting to json, use a more human readable layout. Default is FALSE\r\n").SetDefault(false);
-
-       
+//
+//            _fluentCommandLineParser.Setup(arg => arg.JsonPretty)
+//                .As("pretty")
+//                .WithDescription(
+//                    "When exporting to json, use a more human readable layout. Default is FALSE\r\n").SetDefault(false);
+//
+//       
 
             _fluentCommandLineParser.Setup(arg => arg.DateTimeFormat)
                 .As("dt")
@@ -506,20 +509,47 @@ namespace PECmd
                     CsvWriter csvTl = null;
                     StreamWriter streamWriterTl = null;
 
+                    JsConfig.DateHandler = DateHandler.ISO8601;
+
+                    StreamWriter streamWriterJson = null;
+
+                    var dt = DateTimeOffset.UtcNow;
+
+                    if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
+                    {
+                        var outName = $"{dt:yyyyMMddHHmmss}_PECmd_Output.json";
+                  
+                        if (Directory.Exists(_fluentCommandLineParser.Object.JsonDirectory) == false)
+                        {
+                            _logger.Warn(
+                                $"'{_fluentCommandLineParser.Object.JsonDirectory} does not exist. Creating...'");
+                            Directory.CreateDirectory(_fluentCommandLineParser.Object.JsonDirectory);
+                        }
+
+                        if (_fluentCommandLineParser.Object.JsonName.IsNullOrEmpty() == false)
+                        {
+                            outName = Path.GetFileName(_fluentCommandLineParser.Object.JsonName);
+                        }
+
+                        var outFile = Path.Combine(_fluentCommandLineParser.Object.JsonDirectory, outName);
+
+                        _logger.Warn($"Saving json output to '{outFile}'");
+
+                        streamWriterJson = new StreamWriter(outFile);
+                    }
 
                     if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
                     {
-                        var outName = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output.csv";
+                        var outName = $"{dt:yyyyMMddHHmmss}_PECmd_Output.csv";
                         
                         if (_fluentCommandLineParser.Object.CsvName.IsNullOrEmpty() == false)
                         {
                             outName = Path.GetFileName(_fluentCommandLineParser.Object.CsvName);
                         }
                         
-                        var outNameTl = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_PECmd_Output_Timeline.csv";
+                        var outNameTl = $"{dt:yyyyMMddHHmmss}_PECmd_Output_Timeline.csv";
                         if (_fluentCommandLineParser.Object.CsvName.IsNullOrEmpty() == false)
                         {
-                            
                             outNameTl =
                                 $"{Path.GetFileNameWithoutExtension(_fluentCommandLineParser.Object.CsvName)}_Timeline{Path.GetExtension(_fluentCommandLineParser.Object.CsvName)}";
                         }
@@ -543,7 +573,6 @@ namespace PECmd
                         {
                             streamWriter = new StreamWriter(outFile);
                             csv = new CsvWriter(streamWriter);
-            
 
                             csv.WriteHeader(typeof(CsvOut));
                             csv.NextRecord();
@@ -561,17 +590,7 @@ namespace PECmd
                         }
                     }
 
-                    if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
-                    {
-                        if (Directory.Exists(_fluentCommandLineParser.Object.JsonDirectory) == false)
-                        {
-                            _logger.Warn(
-                                $"'{_fluentCommandLineParser.Object.JsonDirectory} does not exist. Creating...'");
-                            Directory.CreateDirectory(_fluentCommandLineParser.Object.JsonDirectory);
-                        }
 
-                        _logger.Warn($"Saving json output to '{_fluentCommandLineParser.Object.JsonDirectory}'");
-                    }
 
                     XmlTextWriter xml = null;
 
@@ -679,14 +698,9 @@ namespace PECmd
                                     $"Error writing CSV record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
                             }
 
-                            if (_fluentCommandLineParser.Object.JsonDirectory?.Length > 0)
-                            {
-                                SaveJson(processedFile, _fluentCommandLineParser.Object.JsonPretty,
-                                    _fluentCommandLineParser.Object.JsonDirectory);
-                            }
-
-                           
-
+                          
+                            streamWriterJson.WriteLine(o.ToJson());
+                         
                             //XHTML
                             xml?.WriteStartElement("Container");
                             xml?.WriteElementString("SourceFile", o.SourceFilename);
@@ -767,6 +781,10 @@ namespace PECmd
                         xml?.WriteEndElement();
                         xml?.WriteEndDocument();
                         xml?.Flush();
+
+                        //close json
+                        streamWriterJson?.Flush();
+                        streamWriterJson?.Close();
                     }
                 }
                 catch (Exception ex)
@@ -984,34 +1002,7 @@ namespace PECmd
             return csOut;
         }
 
-        private static void SaveJson(IPrefetch pf, bool pretty, string outDir)
-        {
-            try
-            {
-                if (Directory.Exists(outDir) == false)
-                {
-                    Directory.CreateDirectory(outDir);
-                }
-
-                var outName =
-                    $"{DateTimeOffset.UtcNow:yyyyMMddHHmmss}_{Path.GetFileName(pf.SourceFilename)}.json";
-                var outFile = Path.Combine(outDir, outName);
-
-
-                if (pretty)
-                {
-                    File.WriteAllText(outFile, pf.Dump());
-                }
-                else
-                {
-                    File.WriteAllText(outFile, pf.ToJson());
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error exporting json. Error: {ex.Message}");
-            }
-        }
+        
 
         public static string GetDescriptionFromEnumValue(Enum value)
         {
@@ -1324,7 +1315,8 @@ namespace PECmd
         public string Directory { get; set; }
         public string Keywords { get; set; }
         public string JsonDirectory { get; set; }
-        public bool JsonPretty { get; set; }
+        public string JsonName { get; set; }
+        //public bool JsonPretty { get; set; }
         public bool LocalTime { get; set; }
         public string CsvDirectory { get; set; }
         public string CsvName { get; set; }
