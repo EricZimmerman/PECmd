@@ -25,6 +25,7 @@ using ServiceStack.Text;
 using CsvWriter = CsvHelper.CsvWriter;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
+using FileInfo = Alphaleonis.Win32.Filesystem.FileInfo;
 using Path = Alphaleonis.Win32.Filesystem.Path;
 using Version = Prefetch.Version;
 
@@ -376,6 +377,35 @@ namespace PECmd
                         return true;
                     }
 
+                    var fsi = new FileInfo(fsei.FullPath);
+                    var ads = fsi.EnumerateAlternateDataStreams().Where(t=>t.StreamName.Length > 0).ToList();
+                    if (ads.Count>0)
+                    {
+                        _logger.Fatal($"WARNING: '{fsei.FullPath}' has at least one Alternate Data Stream:");
+                        foreach (var alternateDataStreamInfo in ads)
+                        {
+                            _logger.Info($"Name: {alternateDataStreamInfo.StreamName}");
+
+                            var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
+                                FileShare.Read, PathFormat.LongFullPath);
+                            
+                            var pf1 = PrefetchFile.Open(s,$"{fsei.FullPath}:{alternateDataStreamInfo.StreamName}");
+
+                            _logger.Info(
+                                $"---------- Processed '{fsei.FullPath}' ----------");
+                            
+                            if (pf1 != null)
+                            {
+                                if (_fluentCommandLineParser.Object.Quiet == false)
+                                {
+                                    DisplayFile(pf1);
+                                }
+                                _processedFiles.Add(pf1);
+                            }
+                        }
+                        
+                    }
+
                     return false;
                 };
 
@@ -441,7 +471,7 @@ namespace PECmd
                     return;
                 }
 
-                _logger.Info($"Found {pfFiles.Count:N0} Prefetch files");
+                _logger.Info($"\r\nFound {pfFiles.Count:N0} Prefetch files");
                 _logger.Info("");
 
                 var sw = new Stopwatch();
@@ -699,7 +729,7 @@ namespace PECmd
                             }
 
                           
-                            streamWriterJson.WriteLine(o.ToJson());
+                            streamWriterJson?.WriteLine(o.ToJson());
                          
                             //XHTML
                             xml?.WriteStartElement("Container");
@@ -1013,33 +1043,12 @@ namespace PECmd
             return attribute?.Description;
         }
 
-        private static IPrefetch LoadFile(string pfFile)
+        private static void DisplayFile(IPrefetch pf)
         {
-            var pfname = pfFile;
-
-            if (pfFile.StartsWith(VssDir))
-            {
-                pfname=$"VSS{pfFile.Replace($"{VssDir}\\", "")}";
-            }
-
-            if (_fluentCommandLineParser.Object.Quiet == false)
-            {
-                _logger.Warn($"Processing '{pfname}'");
-                _logger.Info("");
-            }
-
-
-            var sw = new Stopwatch();
-            sw.Start();
-
-            try
-            {
-                var pf = PrefetchFile.Open(pfFile);
-
-                if (pf.ParsingError)
+            if (pf.ParsingError)
                 {
-                    _failedFiles.Add($"'{pfname}' is corrupt and did not parse completely!");
-                    _logger.Fatal($"'{pfname}' FILE DID NOT PARSE COMPLETELY!\r\n");
+                    _failedFiles.Add($"'{pf.SourceFilename}' is corrupt and did not parse completely!");
+                    _logger.Fatal($"'{pf.SourceFilename}' FILE DID NOT PARSE COMPLETELY!\r\n");
                 }
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
@@ -1205,21 +1214,56 @@ namespace PECmd
                     }
                 }
 
-                sw.Stop();
 
                 if (_fluentCommandLineParser.Object.Quiet == false)
                 {
                     _logger.Info("");
                 }
 
-                _logger.Info(
-                    $"---------- Processed '{pfname}' in {sw.Elapsed.TotalSeconds:N8} seconds ----------");
-
+              
                 if (_fluentCommandLineParser.Object.Quiet == false)
                 {
                     _logger.Info("\r\n");
                 }
 
+        }
+
+        private static IPrefetch LoadFile(string pfFile)
+        {
+            var pfname = pfFile;
+
+            if (pfFile.StartsWith(VssDir))
+            {
+                pfname=$"VSS{pfFile.Replace($"{VssDir}\\", "")}";
+            }
+
+            if (_fluentCommandLineParser.Object.Quiet == false)
+            {
+                _logger.Warn($"Processing '{pfname}'");
+                _logger.Info("");
+            }
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            try
+            {
+                var pf = PrefetchFile.Open(pfFile);
+
+                if (pf.ParsingError)
+                {
+                    _failedFiles.Add($"'{pfname}' is corrupt and did not parse completely!");
+                    _logger.Fatal($"'{pfname}' FILE DID NOT PARSE COMPLETELY!\r\n");
+                }
+
+                if (_fluentCommandLineParser.Object.Quiet == false)
+                {
+                    DisplayFile(pf);
+                }
+                
+                _logger.Info(
+                        $"---------- Processed '{pfname}' in {sw.Elapsed.TotalSeconds:N8} seconds ----------");
+                
                 return pf;
             }
             catch (ArgumentNullException an)
