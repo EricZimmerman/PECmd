@@ -114,7 +114,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NLog">
-      <Version>4.6.4</Version>
+      <Version>4.6.5</Version>
     </PackageReference>
     <PackageReference Include="ServiceStack.Text">
       <Version>5.5.0</Version>

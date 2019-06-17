@@ -566,6 +566,7 @@ namespace PECmd
                         _logger.Warn($"Saving json output to '{outFile}'");
 
                         streamWriterJson = new StreamWriter(outFile);
+                        JsConfig.DateHandler = DateHandler.ISO8601;
                     }
 
                     if (_fluentCommandLineParser.Object.CsvDirectory?.Length > 0)
@@ -728,8 +729,21 @@ namespace PECmd
                                     $"Error writing CSV record for '{processedFile.SourceFilename}' to '{_fluentCommandLineParser.Object.CsvDirectory}'. Error: {ex.Message}");
                             }
 
+                            //hack
+                            if (streamWriterJson != null)
+                            {
+                                var dtOld = _fluentCommandLineParser.Object.DateTimeFormat;
+
+                                _fluentCommandLineParser.Object.DateTimeFormat = "o";
+
+                                var o1 = GetCsvFormat(processedFile);
+
+                                streamWriterJson.WriteLine(o1.ToJson());
+
+                                _fluentCommandLineParser.Object.DateTimeFormat = dtOld;
+                            }
                           
-                            streamWriterJson?.WriteLine(o.ToJson());
+                            
                          
                             //XHTML
                             xml?.WriteStartElement("Container");
