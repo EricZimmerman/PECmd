@@ -388,8 +388,17 @@ namespace PECmd
 
                             var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
                                 FileShare.Read, PathFormat.LongFullPath);
-                            
-                            var pf1 = PrefetchFile.Open(s,$"{fsei.FullPath}:{alternateDataStreamInfo.StreamName}");
+
+                            IPrefetch pf1 = null;
+
+                            try
+                            {
+                                 pf1 = PrefetchFile.Open(s,$"{fsei.FullPath}:{alternateDataStreamInfo.StreamName}");
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.Warn($"Could not process '{fsei.FullPath}'. Error: {e.Message}");
+                            }
 
                             _logger.Info(
                                 $"---------- Processed '{fsei.FullPath}' ----------");
