@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 
 [assembly: AssemblyTitle("PECmd")]
-[assembly: AssemblyDescription("Prefetch Explorer Command line edition")]
+[assembly: AssemblyDescription("Prefetch Explorer Command Line Edition")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Eric Zimmerman")]
 [assembly: AssemblyProduct("PECmd")]
@@ -35,5 +35,5 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("1.3.4.3")]
-[assembly: AssemblyFileVersion("1.3.4.3")]
+[assembly: AssemblyVersion("1.3.4.2")]
+[assembly: AssemblyFileVersion("1.3.4.2")]
