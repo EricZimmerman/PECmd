@@ -491,6 +491,13 @@ namespace PECmd
                 foreach (var file in pfFiles)
                 {
 
+                    if (File.Exists(file) == false)
+                    {
+                        _logger.Warn($"File '{file}' does not seem to exist any more! Skipping");
+
+                        continue;
+                    }
+
                     if (_fluentCommandLineParser.Object.Dedupe)
                     {
                         using (var fs = new FileStream(file,FileMode.Open,FileAccess.Read))
