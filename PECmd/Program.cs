@@ -374,46 +374,63 @@ namespace PECmd
                 {
                     if (fsei.Extension.ToUpperInvariant() == ".PF" )
                     {
+                        if (File.Exists(fsei.FullPath) == false)
+                        {
+                            return false;
+                        }
+
+                        if (fsei.FileSize == 0)
+                        {
+                            _logger.Debug($"Skipping '{fsei.FullPath}' since size is 0");
+                            return false;
+                        }
+
+                        if (fsei.FullPath.ToUpperInvariant().Contains("[ROOT]"))
+                        {
+                            _logger.Fatal($"WARNING: FTK Imager detected! Do not use FTK Imager to mount image files as it does not work properly! Use Arsenal Image Mounter instead");
+                            return true;
+                        }
+
+                        var fsi = new FileInfo(fsei.FullPath);
+                        var ads = fsi.EnumerateAlternateDataStreams().Where(t=>t.StreamName.Length > 0).ToList();
+                        if (ads.Count>0)
+                        {
+                            _logger.Fatal($"WARNING: '{fsei.FullPath}' has at least one Alternate Data Stream:");
+                            foreach (var alternateDataStreamInfo in ads)
+                            {
+                                _logger.Info($"Name: {alternateDataStreamInfo.StreamName}");
+
+                                var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
+                                    FileShare.Read, PathFormat.LongFullPath);
+
+                                IPrefetch pf1 = null;
+
+                                try
+                                {
+                                    pf1 = PrefetchFile.Open(s,$"{fsei.FullPath}:{alternateDataStreamInfo.StreamName}");
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.Warn($"Could not process '{fsei.FullPath}'. Error: {e.Message}");
+                                }
+
+                                _logger.Info(
+                                    $"---------- Processed '{fsei.FullPath}' ----------");
+                            
+                                if (pf1 != null)
+                                {
+                                    if (_fluentCommandLineParser.Object.Quiet == false)
+                                    {
+                                        DisplayFile(pf1);
+                                    }
+                                    _processedFiles.Add(pf1);
+                                }
+                            }
+                        
+                        }
                         return true;
                     }
 
-                    var fsi = new FileInfo(fsei.FullPath);
-                    var ads = fsi.EnumerateAlternateDataStreams().Where(t=>t.StreamName.Length > 0).ToList();
-                    if (ads.Count>0)
-                    {
-                        _logger.Fatal($"WARNING: '{fsei.FullPath}' has at least one Alternate Data Stream:");
-                        foreach (var alternateDataStreamInfo in ads)
-                        {
-                            _logger.Info($"Name: {alternateDataStreamInfo.StreamName}");
-
-                            var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
-                                FileShare.Read, PathFormat.LongFullPath);
-
-                            IPrefetch pf1 = null;
-
-                            try
-                            {
-                                 pf1 = PrefetchFile.Open(s,$"{fsei.FullPath}:{alternateDataStreamInfo.StreamName}");
-                            }
-                            catch (Exception e)
-                            {
-                                _logger.Warn($"Could not process '{fsei.FullPath}'. Error: {e.Message}");
-                            }
-
-                            _logger.Info(
-                                $"---------- Processed '{fsei.FullPath}' ----------");
-                            
-                            if (pf1 != null)
-                            {
-                                if (_fluentCommandLineParser.Object.Quiet == false)
-                                {
-                                    DisplayFile(pf1);
-                                }
-                                _processedFiles.Add(pf1);
-                            }
-                        }
-                        
-                    }
 
                     return false;
                 };
