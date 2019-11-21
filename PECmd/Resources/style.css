@@ -485,7 +485,7 @@ Volume1Serial:before {
 }
 
 Volume1Created:before {
-	content: "MAC Vendor:";
+	content: "Volume 1 Created:";
 	display: inline;
 	font-family: verdana, sans-serif;
 	font-size: 12px;
