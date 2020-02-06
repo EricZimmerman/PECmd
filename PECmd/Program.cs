@@ -636,13 +636,13 @@ namespace PECmd
                         try
                         {
                             streamWriter = new StreamWriter(outFile);
-                            csv = new CsvWriter(streamWriter);
+                            csv = new CsvWriter(streamWriter,CultureInfo.InvariantCulture);
 
                             csv.WriteHeader(typeof(CsvOut));
                             csv.NextRecord();
 
                             streamWriterTl = new StreamWriter(outFileTl);
-                            csvTl = new CsvWriter(streamWriterTl);
+                            csvTl = new CsvWriter(streamWriterTl,CultureInfo.InvariantCulture);
 
                             csvTl.WriteHeader(typeof(CsvOutTl));
                             csvTl.NextRecord();
