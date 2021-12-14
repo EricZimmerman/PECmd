@@ -70,7 +70,7 @@ internal class Program
 
     private static readonly string BaseDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-    public static bool IsAdministrator()
+    private static bool IsAdministrator()
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -96,15 +96,29 @@ internal class Program
         {
             new Option<string>(
                 "-f",
-                "File to process ($MFT | $J | $Boot | $SDS). Required"),
+                "File to process. Either this or -d is required"),
 
             new Option<string>(
-                "-m",
-                "$MFT file to use when -f points to a $J file (Use this to resolve parent path in $J CSV output).\r\n"),
+                "-d",
+                "Directory to recursively process. Either this or -f is required"),
 
+            
+            new Option<string>(
+                "-k",
+                "Comma separated list of keywords to highlight in output. By default, 'temp' and 'tmp' are highlighted. Any additional keywords will be added to these"),
+
+            new Option<string>(
+                "-o",
+                "When specified, save prefetch file bytes to the given path. Useful to look at decompressed Win10 files"),
+
+            new Option<bool>(
+                "-q",
+                getDefaultValue:()=>false,
+                "Do not dump full details about each file processed. Speeds up processing when using --json or --csv"),
+            
             new Option<string>(
                 "--json",
-                "Directory to save JSON formatted results to. This or --csv required unless --de or --body is specified"),
+                "Directory to save JSON formatted results to. Be sure to include the full path in double quotes"),
 
             new Option<string>(
                 "--jsonf",
@@ -112,11 +126,41 @@ internal class Program
 
             new Option<string>(
                 "--csv",
-                "Directory to save CSV formatted results to. This or --json required unless --de or --body is specified"),
+                "Directory to save CSV formatted results to. Be sure to include the full path in double quotes"),
 
             new Option<string>(
                 "--csvf",
-                "File name to save CSV formatted results to. When present, overrides default name\r\n")
+                "File name to save CSV formatted results to. When present, overrides default name\r\n"),
+            
+            new Option<string>(
+                "--html",
+                "Directory to save xhtml formatted results to. Be sure to include the full path in double quotes"),
+            
+            new Option<string>(
+                "--dt",
+                getDefaultValue:()=>"yyyy-MM-dd HH:mm:ss",
+                "Directory to save CSV formatted results to. This or --json required unless --de or --body is specified"),
+
+            new Option<bool>(
+                "--mp",
+                getDefaultValue:()=>false,
+                "When true, display higher precision for timestamps"),
+            new Option<bool>(
+                "--vss",
+                getDefaultValue:()=>false,
+                "Process all Volume Shadow Copies that exist on drive specified by -f or -d"),
+            new Option<bool>(
+                "--dedupe",
+                getDefaultValue:()=>false,
+                "Deduplicate -f or -d & VSCs based on SHA-1. First file found wins"),
+            new Option<bool>(
+                "--debug",
+                getDefaultValue:()=>false,
+                "Show debug information during processing"),
+            new Option<bool>(
+                "--trace",
+                getDefaultValue:()=>false,
+                "Show trace information during processing"),
         };
 
         _rootCommand.Description = Header + "\r\n\r\n" + Footer;
@@ -245,11 +289,9 @@ internal class Program
 
         if (f?.Length > 0)
         {
-            IPrefetch pf;
-
             try
             {
-                pf = LoadFile(f, q, dt);
+                var pf = LoadFile(f, q, dt);
 
                 if (pf != null)
                 {
@@ -315,8 +357,10 @@ internal class Program
 
             var pfFiles = new List<string>();
 
+            IEnumerable<string> files2;
+
 #if !NET6_0
-        var enumerationFilters = new DirectoryEnumerationFilters();
+        var enumerationFilters = new Alphaleonis.Win32.Filesystem.DirectoryEnumerationFilters();
         enumerationFilters.InclusionFilter = fsei =>
         {
             if (fsei.Extension.ToUpperInvariant() == ".PF")
@@ -348,7 +392,7 @@ internal class Program
                         _logger.Info($"Name: {alternateDataStreamInfo.StreamName}");
 
                         var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
-                            FileShare.Read, PathFormat.LongFullPath);
+                            FileShare.Read, Alphaleonis.Win32.Filesystem.PathFormat.LongFullPath);
 
                         IPrefetch pf1 = null;
 
@@ -389,18 +433,15 @@ internal class Program
         enumerationFilters.ErrorFilter = (errorCode, errorMessage, pathProcessed) => true;
 
         var dirEnumOptions =
-            DirectoryEnumerationOptions.Files | DirectoryEnumerationOptions.Recursive |
-            DirectoryEnumerationOptions.SkipReparsePoints | DirectoryEnumerationOptions.ContinueOnException |
-            DirectoryEnumerationOptions.BasicSearch;
+            Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.Files | Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.Recursive |
+            Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.SkipReparsePoints | Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.ContinueOnException |
+            Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.BasicSearch;
 
-        var files2 =
+        files2 =
             Directory.EnumerateFileSystemEntries(d, dirEnumOptions, enumerationFilters);
-
+        
 #else
-
-
-            IEnumerable<string> files3;
-
+            
             var options = new EnumerationOptions
             {
                 IgnoreInaccessible = true,
@@ -409,14 +450,13 @@ internal class Program
                 AttributesToSkip = 0
             };
 
-            files3 =
-                Directory.EnumerateFileSystemEntries(d, "*.pf", options);
+            files2 = Directory.EnumerateFileSystemEntries(d, "*.pf", options);
 #endif
 
 
             try
             {
-                pfFiles.AddRange(files3);
+                pfFiles.AddRange(files2);
 
                 if (vss)
                 {
@@ -436,7 +476,6 @@ internal class Program
                         Directory.EnumerateFileSystemEntries(target, dirEnumOptions, enumerationFilters);
 
 #else
-                        IEnumerable<string> files2;
 
                         var enumerationOptions = new EnumerationOptions
                         {
@@ -446,8 +485,7 @@ internal class Program
                             AttributesToSkip = 0
                         };
 
-                        files2 =
-                            Directory.EnumerateFileSystemEntries(target, "*.pf", enumerationOptions);
+                         files2 = Directory.EnumerateFileSystemEntries(target, "*.pf", enumerationOptions);
 #endif
 
                         try
@@ -1038,7 +1076,7 @@ internal class Program
     }
 
 
-    public static string GetDescriptionFromEnumValue(Enum value)
+    private static string GetDescriptionFromEnumValue(Enum value)
     {
         var attribute = value.GetType()
             .GetField(value.ToString())
