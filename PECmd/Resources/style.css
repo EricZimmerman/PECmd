@@ -4,21 +4,23 @@
                     Last Updated: 2016.03.04
 -------------------------------------------- */
 
-/* If value is empty, then hide container */	
-:empty { display: none !important; }
+/* If value is empty, then hide container */
+:empty {
+    display: none !important;
+}
 
 Container {
-	background-color: #E9F0F4;
-	border: medium #146B99 solid;
-	display: block;
-	height: auto;
-	margin: 10px;
-	min-height: 50px; /* min-height */
-	min-width: 50px; /* min-width  */
-	overflow: auto;
-	padding: 0;
-	resize: both;
-	width: 1400px;
+    background-color: #E9F0F4;
+    border: medium #146B99 solid;
+    display: block;
+    height: auto;
+    margin: 10px;
+    min-height: 50px; /* min-height */
+    min-width: 50px; /* min-width  */
+    overflow: auto;
+    padding: 0;
+    resize: both;
+    width: 1400px;
 }
 
 /* Remove comment tags to show .PF before and above path statement
@@ -36,44 +38,44 @@ Container {
 	*/
 
 SourceFile {
-	background-color: #146B99;
-	color: #FFBD6F;
-	display: block;
-	font-size: 16px;
-	font-weight: bold;
-	margin: 0;
-	padding: 0;
-	width: auto;
+    background-color: #146B99;
+    color: #FFBD6F;
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    width: auto;
 }
 
 SourceCreated, SourceModified, SourceAccessed, LastRun, PreviousRun0, PreviousRun1, PreviousRun2, PreviousRun3, PreviousRun4, PreviousRun5, PreviousRun6, ExecutableName, RunCount, Size, Hash, Version, Note, Volume0Name, Volume0Serial, Volume0Created, Volume1Name, Volume1Serial, Volume1Created, Directories, FilesLoaded {
-	color: #043F5F;
-	display: block;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: normal;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 4px 0 4px 0;
-	padding: 2px 0 0 34px;
-	text-align: left;
-	width: auto;
-	word-spacing: 2pt;
+    color: #043F5F;
+    display: block;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: normal;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 4px 0 4px 0;
+    padding: 2px 0 0 34px;
+    text-align: left;
+    width: auto;
+    word-spacing: 2pt;
 }
 
 SourceCreated:before {
-	content: "Source Created:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 20px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Source Created:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 20px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show (UTC) after timestamp
@@ -84,23 +86,23 @@ SourceCreated:before {
 		*/
 
 SourceCreated:hover {
-	color: #A6A8A9;
-	content: " (UTC)";
+    color: #A6A8A9;
+    content: " (UTC)";
 }
 
 SourceModified:before {
-	content: "Source Modified:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 15px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Source Modified:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 15px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show (UTC) after timestamp
@@ -111,18 +113,18 @@ SourceModified:before {
 		*/
 
 SourceAccessed:before {
-	content: "Source Accessed:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Source Accessed:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show (UTC) after timestamp
@@ -133,18 +135,18 @@ SourceAccessed:before {
 		*/
 
 LastRun:before {
-	content: "Last Run:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 73px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Last Run:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 73px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show (UTC) after timestamp
@@ -155,123 +157,123 @@ LastRun:before {
 		*/
 
 PreviousRun0:before {
-	content: "Previous Run 0:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 0:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 PreviousRun1:before {
-	content: "Previous Run 1:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 1:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 PreviousRun2:before {
-	content: "Previous Run 2:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 2:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 PreviousRun3:before {
-	content: "Previous Run 3:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 3:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 PreviousRun4:before {
-	content: "Previous Run 4:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 4:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 PreviousRun5:before {
-	content: "Previous Run 5:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 5:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 PreviousRun6:before {
-	content: "Previous Run 6:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Previous Run 6:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 ExecutableName:before {
-	content: "Executable Name:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Executable Name:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show a note on report that matches hover tool tip
@@ -282,33 +284,33 @@ ExecutableName:before {
 		*/
 
 RunCount:before {
-	content: "Run Count:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Run Count:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 Size:before {
-	content: "Size:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Size:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show a note on report that matches hover tool tip
@@ -319,18 +321,18 @@ Size:before {
 		*/
 
 Hash:before {
-	content: "Hash:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Hash:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show a note on report that matches hover tool tip
@@ -341,18 +343,18 @@ Hash:before {
 		*/
 
 Version:before {
-	content: "Version:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Version:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show a note on report that matches hover tool tip
@@ -363,26 +365,28 @@ Version:before {
 		*/
 
 Note:before {
-	content: "Note:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Note:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 Note:after {
-	color: #A6A8A9;
-	content: " (Note: Populated when >2 volumes are identified in a prefetch file. This is rare.)";
+    color: #A6A8A9;
+    content: " (Note: Populated when >2 volumes are identified in a prefetch file. This is rare.)";
 }
 
-Volume0Name { color: maroon; }
+Volume0Name {
+    color: maroon;
+}
 
 /* Remove comment tags to show a note on report that matches hover tool tip
 		Volume0Name:after {
@@ -392,21 +396,23 @@ Volume0Name { color: maroon; }
 		*/
 
 Volume0Name:before {
-	content: "Volume 0 Name:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Volume 0 Name:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
-Volume0Serial { color: maroon; }
+Volume0Serial {
+    color: maroon;
+}
 
 /* Remove comment tags to show a note on report that matches hover tool tip
 		Volume0Serial:after {
@@ -416,35 +422,37 @@ Volume0Serial { color: maroon; }
 		*/
 
 Volume0Serial:before {
-	content: "Volume 0 Serial:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Volume 0 Serial:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
-Volume0Created { color: maroon; }
+Volume0Created {
+    color: maroon;
+}
 
 Volume0Created:before {
-	content: "Volume 0 Created:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 4px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Volume 0 Created:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 4px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 /* Remove comment tags to show a note on report that matches hover tool tip
@@ -455,75 +463,75 @@ Volume0Created:before {
 		*/
 
 Volume1Name:before {
-	content: "Volume 1 Name:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Volume 1 Name:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 Volume1Serial:before {
-	content: "Volume 1 Serial:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Volume 1 Serial:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 Volume1Created:before {
-	content: "Volume 1 Created:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 18px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Volume 1 Created:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 18px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
 
 div {
-	-moz-column-count: 3; /* Firefox */
-	-webkit-column-count: 3; /* Chrome, Safari, Opera */
-	column-count: 3;
+    -moz-column-count: 3; /* Firefox */
+    -webkit-column-count: 3; /* Chrome, Safari, Opera */
+    column-count: 3;
 }
 
 Directories {
-	background-image: url(directories.png);
-	background-position: left top;
-	background-repeat: no-repeat;
-	background-size: 30px 44px;
-	line-height: 1.4;
+    background-image: url(directories.png);
+    background-position: left top;
+    background-repeat: no-repeat;
+    background-size: 30px 44px;
+    line-height: 1.4;
 }
 
 Directories:before {
-	content: "Directories:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
+    content: "Directories:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
 }
 
 /* Remove comment tags to show a note on report that matches hover tool tip
@@ -534,30 +542,31 @@ Directories:before {
 		*/
 
 FilesLoaded {
-	background-image: url(filesloaded.png);
-	background-position: left top;
-	background-repeat: no-repeat;
-	background-size: 30px 44px;
-	line-height: 1.4;
+    background-image: url(filesloaded.png);
+    background-position: left top;
+    background-repeat: no-repeat;
+    background-size: 30px 44px;
+    line-height: 1.4;
 }
 
 FilesLoaded:before {
-	content: "Files Loaded:";
-	display: inline;
-	font-family: verdana, sans-serif;
-	font-size: 12px;
-	font-weight: bold;
-	letter-spacing: 1pt;
-	line-height: 1;
-	margin: 2px 0 4px 0;
-	padding: 2px 10px 0 2px;
-	text-align: right;
-	text-decoration: underline;
-	word-spacing: 2pt;
+    content: "Files Loaded:";
+    display: inline;
+    font-family: verdana, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    line-height: 1;
+    margin: 2px 0 4px 0;
+    padding: 2px 10px 0 2px;
+    text-align: right;
+    text-decoration: underline;
+    word-spacing: 2pt;
 }
-		/* Remove comment tags to show a note on report that matches hover tool tip
-		FilesLoaded:after {
-			content: " (Note: A comma separated list of all files that were loaded by the executable)";
-			color: #A6A8A9;
-		}
-		*/
+
+/* Remove comment tags to show a note on report that matches hover tool tip
+FilesLoaded:after {
+    content: " (Note: A comma separated list of all files that were loaded by the executable)";
+    color: #A6A8A9;
+}
+*/
