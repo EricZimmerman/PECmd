@@ -3,9 +3,9 @@
 /workspace.xml
 # Rider ignored files
 /projectSettingsUpdater.xml
+/.idea.PECmd.iml
 /modules.xml
 /contentModel.xml
-/.idea.PECmd.iml
 # Editor-based HTTP Client requests
 /httpRequests/
 # Datasource local storage ignored files
