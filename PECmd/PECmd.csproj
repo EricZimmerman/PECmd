@@ -9,7 +9,7 @@
         <Description>Prefetch Explorer Command Line Edition</Description>
         <Copyright>Eric Zimmerman</Copyright>
         <LangVersion>10</LangVersion>
-        <Version>1.4.0.0</Version>
+        <Version>1.5.0.0</Version>
         <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     </PropertyGroup>
     <PropertyGroup>
