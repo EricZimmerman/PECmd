@@ -1,14 +1,4 @@
-﻿#if !NET6_0
-using Directory = Alphaleonis.Win32.Filesystem.Directory;
-using File = Alphaleonis.Win32.Filesystem.File;
-using FileInfo = Alphaleonis.Win32.Filesystem.FileInfo;
-using Path = Alphaleonis.Win32.Filesystem.Path;
-#else
-using Directory = System.IO.Directory;
-using File = System.IO.File;
-using Path = System.IO.Path;
-#endif
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
@@ -36,6 +26,16 @@ using ServiceStack;
 using ServiceStack.Text;
 using CsvWriter = CsvHelper.CsvWriter;
 using Version = Prefetch.Version;
+#if NET462
+using Directory = Alphaleonis.Win32.Filesystem.Directory;
+using File = Alphaleonis.Win32.Filesystem.File;
+using FileInfo = Alphaleonis.Win32.Filesystem.FileInfo;
+using Path = Alphaleonis.Win32.Filesystem.Path;
+#else
+using Directory = System.IO.Directory;
+using File = System.IO.File;
+using Path = System.IO.Path;
+#endif
 
 namespace PECmd;
 
@@ -43,7 +43,9 @@ internal class Program
 {
     private const string VssDir = @"C:\___vssMount";
 
-    private static readonly string _preciseTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff";
+    private static readonly string PreciseTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff";
+
+    private static string ActiveDateTimeFormat;
 
     private static HashSet<string> _keywords;
 
@@ -135,7 +137,7 @@ internal class Program
             new Option<string>(
                 "--dt",
                 getDefaultValue:()=>"yyyy-MM-dd HH:mm:ss",
-                "Directory to save CSV formatted results to. This or --json required unless --de or --body is specified"),
+                "The custom date/time format to use when displaying time stamps. See https://goo.gl/CNVq0k for options"),
 
             new Option<bool>(
                 "--mp",
@@ -173,6 +175,17 @@ internal class Program
     {
         var levelSwitch = new LoggingLevelSwitch();
 
+        ActiveDateTimeFormat = dt;
+        
+        if (mp)
+        {
+            ActiveDateTimeFormat = PreciseTimeFormat;
+        }
+        
+        var formatter  =
+            new DateTimeOffsetFormatter(CultureInfo.CurrentCulture);
+        
+
         var template = "{Message:lj}{NewLine}{Exception}";
 
         if (debug)
@@ -188,7 +201,7 @@ internal class Program
         }
         
         var conf = new LoggerConfiguration()
-            .WriteTo.Console(outputTemplate: template)
+            .WriteTo.Console(outputTemplate: template,formatProvider: formatter)
             .MinimumLevel.ControlledBy(levelSwitch);
       
         Log.Logger = conf.CreateLogger();
@@ -201,7 +214,6 @@ internal class Program
             Environment.Exit(0);
             return;
         }
-
         
         if (f.IsNullOrEmpty() && d.IsNullOrEmpty())
         {
@@ -217,14 +229,14 @@ internal class Program
         if (f.IsNullOrEmpty() == false &&
             !File.Exists(f))
         {
-            Log.Warning("File '{F}' not found. Exiting",f);
+            Log.Warning("File {F} not found. Exiting",f);
             return;
         }
 
         if (d.IsNullOrEmpty() == false &&
             !Directory.Exists(d))
         {
-            Log.Warning("Directory '{D}' not found. Exiting",d);
+            Log.Warning("Directory {D} not found. Exiting",d);
             return;
         }
 
@@ -270,10 +282,6 @@ internal class Program
         Log.Information("Keywords: {Keywords}",string.Join(", ", _keywords));
         Console.WriteLine();
 
-        if (mp)
-        {
-            dt = _preciseTimeFormat;
-        }
 
         if (vss)
         {
@@ -301,7 +309,7 @@ internal class Program
         {
             try
             {
-                var pf = LoadFile(f, q, dt);
+                var pf = LoadFile(f, q, ActiveDateTimeFormat);
 
                 if (pf != null)
                 {
@@ -317,7 +325,7 @@ internal class Program
                             }
 
                             PrefetchFile.SavePrefetch(o, pf);
-                            Log.Information("Saved prefetch bytes to '{O}'",o);
+                            Log.Information("Saved prefetch bytes to {O}",o);
                         }
                         catch (Exception e)
                         {
@@ -340,7 +348,7 @@ internal class Program
                         var newPath = Path.Combine(vssDir, stem);
                         if (File.Exists(newPath))
                         {
-                            pf = LoadFile(newPath, q, dt);
+                            pf = LoadFile(newPath, q, ActiveDateTimeFormat);
                             if (pf != null)
                             {
                                 _processedFiles.Add(pf);
@@ -352,17 +360,17 @@ internal class Program
             catch (UnauthorizedAccessException ex)
             {
                 Log.Error(ex,
-                    "Unable to access '{F}'. Are you running as an administrator? Error: {Message}",f,ex.Message);
+                    "Unable to access {F}. Are you running as an administrator? Error: {Message}",f,ex.Message);
             }
             catch (Exception ex)
             {
                 Log.Error(ex,
-                    "Error parsing prefetch file '{F}'. Error: {Message}",f,ex.Message);
+                    "Error parsing prefetch file {F}. Error: {Message}",f,ex.Message);
             }
         }
         else
         {
-            Log.Information("Looking for prefetch files in '{D}'",d);
+            Log.Information("Looking for prefetch files in {D}",d);
             Console.WriteLine();
 
             var pfFiles = new List<string>();
@@ -382,7 +390,7 @@ internal class Program
 
                 if (fsei.FileSize == 0)
                 {
-                    Log.Debug("Skipping '{FullPath}' since size is 0",fsei.FullPath);
+                    Log.Debug("Skipping {FullPath} since size is 0",fsei.FullPath);
                     return false;
                 }
 
@@ -396,7 +404,7 @@ internal class Program
                 var ads = fsi.EnumerateAlternateDataStreams().Where(t => t.StreamName.Length > 0).ToList();
                 if (ads.Count > 0)
                 {
-                    Log.Warning("WARNING: '{FullPath}' has at least one Alternate Data Stream",fsei.FullPath);
+                    Log.Warning("WARNING: {FullPath} has at least one Alternate Data Stream",fsei.FullPath);
                     foreach (var alternateDataStreamInfo in ads)
                     {
                         Log.Information("Name: {StreamName}",alternateDataStreamInfo.StreamName);
@@ -412,16 +420,16 @@ internal class Program
                         }
                         catch (Exception e)
                         {
-                            Log.Warning(e,"Could not process '{FullPath}'. Error: {Message}",fsei.FullPath,e.Message);
+                            Log.Warning(e,"Could not process {FullPath}. Error: {Message}",fsei.FullPath,e.Message);
                         }
 
-                        Log.Information("---------- Processed '{FullPath}' ----------",fsei.FullPath);
+                        Log.Information("---------- Processed {FullPath} ----------",fsei.FullPath);
 
                         if (pf1 != null)
                         {
                             if (q == false)
                             {
-                                DisplayFile(pf1,q,dt);
+                                DisplayFile(pf1,q,ActiveDateTimeFormat);
                             }
 
                             _processedFiles.Add(pf1);
@@ -478,7 +486,7 @@ internal class Program
 
                         var target = Path.Combine(vssDir, stem);
 
-                        Log.Information("Searching '{Target}' for prefetch files...",$"VSS{target.Replace($"{VssDir}\\", "")}");
+                        Log.Information("Searching {Target} for prefetch files...",$"VSS{target.Replace($"{VssDir}\\", "")}");
 
 #if !NET6_0
                     files2 =
@@ -503,7 +511,7 @@ internal class Program
                         }
                         catch (Exception e)
                         {
-                            Log.Error(e,"Could not access all files in '{D}'",d);
+                            Log.Error(e,"Could not access all files in {D}",d);
                             Console.WriteLine();
                             Log.Error("Rerun the program with Administrator privileges to try again");
                             Console.WriteLine();
@@ -515,13 +523,13 @@ internal class Program
             catch (UnauthorizedAccessException ua)
             {
                 Log.Error(ua,
-                    "Unable to access '{D}'. Are you running as an administrator? Error: {Message}",d,ua.Message);
+                    "Unable to access {D}. Are you running as an administrator? Error: {Message}",d,ua.Message);
                 return;
             }
             catch (Exception ex)
             {
                 Log.Error(ex,
-                    "Error getting prefetch files in '{D}'. Error: {Message}",d,ex.Message);
+                    "Error getting prefetch files in {D}. Error: {Message}",d,ex.Message);
                 return;
             }
 
@@ -538,7 +546,7 @@ internal class Program
             {
                 if (File.Exists(file) == false)
                 {
-                    Log.Warning("File '{File}' does not seem to exist any more! Skipping",file);
+                    Log.Warning("File {File} does not seem to exist any more! Skipping",file);
 
                     continue;
                 }
@@ -549,14 +557,14 @@ internal class Program
                     var sha = Helper.GetSha1FromStream(fs, 0);
                     if (seenHashes.Contains(sha))
                     {
-                        Log.Debug("Skipping '{File}' as a file with SHA-1 '{Sha}' has already been processed",file,sha);
+                        Log.Debug("Skipping {File} as a file with SHA-1 {Sha} has already been processed",file,sha);
                         continue;
                     }
 
                     seenHashes.Add(sha);
                 }
 
-                var pf = LoadFile(file, q, dt);
+                var pf = LoadFile(file, q, ActiveDateTimeFormat);
 
                 if (pf != null)
                 {
@@ -609,7 +617,7 @@ internal class Program
 
                     if (Directory.Exists(json) == false)
                     {
-                        Log.Information("'{Json} does not exist. Creating...'",json);
+                        Log.Information("{Json} does not exist. Creating...",json);
                         Directory.CreateDirectory(json);
                     }
 
@@ -620,7 +628,7 @@ internal class Program
 
                     var outFile = Path.Combine(json, outName);
 
-                    Log.Information("Saving json output to '{OutFile}'",outFile);
+                    Log.Information("Saving json output to {OutFile}",outFile);
 
                     streamWriterJson = new StreamWriter(outFile);
                     JsConfig.DateHandler = DateHandler.ISO8601;
@@ -649,12 +657,12 @@ internal class Program
 
                     if (Directory.Exists(csv) == false)
                     {
-                        Log.Information("Path to '{Csv}' does not exist. Creating...",csv);
+                        Log.Information("Path to {Csv} does not exist. Creating...",csv);
                         Directory.CreateDirectory(csv);
                     }
 
-                    Log.Information("CSV output will be saved to '{OutFile}'",outFile);
-                    Log.Information("CSV time line output will be saved to '{OutFileTl}'",outFileTl);
+                    Log.Information("CSV output will be saved to {OutFile}",outFile);
+                    Log.Information("CSV time line output will be saved to {OutFileTl}",outFileTl);
 
                     try
                     {
@@ -673,7 +681,7 @@ internal class Program
                     catch (Exception ex)
                     {
                         Log.Error(ex,
-                            "Unable to open '{OutFile}' for writing. CSV export canceled. Error: {Message}",outFile,ex.Message);
+                            "Unable to open {OutFile} for writing. CSV export canceled. Error: {Message}",outFile,ex.Message);
                     }
                 }
 
@@ -684,7 +692,7 @@ internal class Program
                 {
                     if (Directory.Exists(html) == false)
                     {
-                        Log.Information("'{Html} does not exist. Creating...'",html);
+                        Log.Information("{Html} does not exist. Creating...",html);
                         Directory.CreateDirectory(html);
                     }
 
@@ -714,7 +722,7 @@ internal class Program
                     var outFile = Path.Combine(html, outDir,
                         "index.xhtml");
 
-                    Log.Information("Saving HTML output to '{OutFile}'",outFile);
+                    Log.Information("Saving HTML output to {OutFile}",outFile);
 
                     xml = new XmlTextWriter(outFile, Encoding.UTF8)
                     {
@@ -736,7 +744,7 @@ internal class Program
                 {
                     foreach (var processedFile in _processedFiles)
                     {
-                        var csvOut = GetCsvFormat(processedFile, dt);
+                        var csvOut = GetCsvFormat(processedFile, ActiveDateTimeFormat);
 
                         var pfname = csvOut.SourceFilename;
 
@@ -763,7 +771,7 @@ internal class Program
                                 }
 
                                 t.ExecutableName = exePath;
-                                t.RunTime = dateTimeOffset.ToString(dt);
+                                t.RunTime = dateTimeOffset.ToString(ActiveDateTimeFormat);
 
                                 csvTl?.WriteRecord(t);
                                 csvTl?.NextRecord();
@@ -772,7 +780,7 @@ internal class Program
                         catch (Exception ex)
                         {
                             Log.Error(ex,
-                                "Error getting time line record for '{SourceFilename}' to '{Csv}'. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
+                                "Error getting time line record for {SourceFilename} to {Csv}. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
                         }
 
                         try
@@ -782,21 +790,16 @@ internal class Program
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex,"Error writing CSV record for '{SourceFilename}' to '{Csv}'. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
+                            Log.Error(ex,"Error writing CSV record for {SourceFilename} to {Csv}. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
                         }
 
                         //hack
                         if (streamWriterJson != null)
                         {
-                            var dtOld = dt;
-
-                            dt = "o";
-
-                            var o1 = GetCsvFormat(processedFile, dt);
+                            var o1 = GetCsvFormat(processedFile, "o");
 
                             streamWriterJson.WriteLine(o1.ToJson());
-
-                            dt = dtOld;
+                            
                         }
 
 
@@ -926,7 +929,7 @@ internal class Program
         {
             var vol0Create = pf.VolumeInformation[0].CreationTime;
 
-            volDate = vol0Create.ToString(dt);
+            volDate = vol0Create.ToString(ActiveDateTimeFormat);
 
             if (vol0Create.Year == 1601)
             {
@@ -943,16 +946,16 @@ internal class Program
         {
             var lr = pf.LastRunTimes[0];
 
-            lrTime = lr.ToString(dt);
+            lrTime = lr.ToString(ActiveDateTimeFormat);
         }
 
 
         var csOut = new CsvOut
         {
             SourceFilename = pf.SourceFilename,
-            SourceCreated = created.ToString(dt),
-            SourceModified = modified.ToString(dt),
-            SourceAccessed = accessed.ToString(dt),
+            SourceCreated = created.ToString(ActiveDateTimeFormat),
+            SourceModified = modified.ToString(ActiveDateTimeFormat),
+            SourceAccessed = accessed.ToString(ActiveDateTimeFormat),
             Hash = pf.Header.Hash,
             ExecutableName = pf.Header.ExecutableFilename,
             Size = pf.Header.FileSize.ToString(),
@@ -968,49 +971,49 @@ internal class Program
         if (pf.LastRunTimes.Count > 1)
         {
             var lrt = pf.LastRunTimes[1];
-            csOut.PreviousRun0 = lrt.ToString(dt);
+            csOut.PreviousRun0 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.LastRunTimes.Count > 2)
         {
             var lrt = pf.LastRunTimes[2];
-            csOut.PreviousRun1 = lrt.ToString(dt);
+            csOut.PreviousRun1 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.LastRunTimes.Count > 3)
         {
             var lrt = pf.LastRunTimes[3];
-            csOut.PreviousRun2 = lrt.ToString(dt);
+            csOut.PreviousRun2 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.LastRunTimes.Count > 4)
         {
             var lrt = pf.LastRunTimes[4];
-            csOut.PreviousRun3 = lrt.ToString(dt);
+            csOut.PreviousRun3 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.LastRunTimes.Count > 5)
         {
             var lrt = pf.LastRunTimes[5];
-            csOut.PreviousRun4 = lrt.ToString(dt);
+            csOut.PreviousRun4 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.LastRunTimes.Count > 6)
         {
             var lrt = pf.LastRunTimes[6];
-            csOut.PreviousRun5 = lrt.ToString(dt);
+            csOut.PreviousRun5 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.LastRunTimes.Count > 7)
         {
             var lrt = pf.LastRunTimes[7];
-            csOut.PreviousRun6 = lrt.ToString(dt);
+            csOut.PreviousRun6 = lrt.ToString(ActiveDateTimeFormat);
         }
 
         if (pf.VolumeInformation?.Count > 1)
         {
             var vol1 = pf.VolumeInformation[1].CreationTime;
-            csOut.Volume1Created = vol1.ToString(dt);
+            csOut.Volume1Created = vol1.ToString(ActiveDateTimeFormat);
             csOut.Volume1Name = pf.VolumeInformation[1].DeviceName;
             csOut.Volume1Serial = pf.VolumeInformation[1].SerialNumber;
         }
@@ -1056,8 +1059,8 @@ internal class Program
     {
         if (pf.ParsingError)
         {
-            _failedFiles.Add($"'{pf.SourceFilename}' is corrupt and did not parse completely!");
-            Log.Warning("'{SourceFilename}' FILE DID NOT PARSE COMPLETELY!",pf.SourceFilename);
+            _failedFiles.Add($"{pf.SourceFilename} is corrupt and did not parse completely!");
+            Log.Warning("{SourceFilename} FILE DID NOT PARSE COMPLETELY!",pf.SourceFilename);
             Console.WriteLine();
         }
 
@@ -1074,39 +1077,32 @@ internal class Program
             var modified = pf.SourceModifiedOn;
             var accessed = pf.SourceAccessedOn;
 
-            Log.Information("Created on: {CreatedOn:dt}",created);
-            Log.Information("Modified on: {Modified:dt}",modified);
-            Log.Information("Last accessed on: {Accessed:dt}",accessed);
+            Log.Information("Created on: {CreatedOn}",created);
+            Log.Information("Modified on: {Modified}",modified);
+            Log.Information("Last accessed on: {Accessed}",accessed);
             Console.WriteLine();
-
-            var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
-            var dd = new string('0', dirString.Length);
-            var dirFormat = $"{dd}.##";
-
-            var fString = pf.FileMetricsCount.ToString(CultureInfo.InvariantCulture);
-            var ff = new string('0', fString.Length);
-            var fileFormat = $"{ff}.##";
 
             Log.Information("Executable name: {ExecutableFilename}",pf.Header.ExecutableFilename);
             Log.Information("Hash: {Hash}",pf.Header.Hash);
             Log.Information("File size (bytes): {FileSize:N0}",pf.Header.FileSize);
             Log.Information("Version: {Description}",GetDescriptionFromEnumValue(pf.Header.Version));
-        Console.WriteLine();
+            Console.WriteLine();
 
             Log.Information("Run count: {RunCount:N0}",pf.RunCount);
 
             var lastRun = pf.LastRunTimes.First();
 
-            Log.Information("Last run: {lastRun:dt}",lastRun);
+            Log.Information("Last run: {LastRun}",lastRun);
 
             if (pf.LastRunTimes.Count > 1)
             {
                 var lastRuns = pf.LastRunTimes.Skip(1).ToList();
 
                 var otherRunTimes = string.Join(", ",
-                    lastRuns.Select(t => t.ToString(dt)));
+                    lastRuns.Select(t => t.ToString(ActiveDateTimeFormat)));
 
                 Log.Information("Other run times: {OtherRunTimes}",otherRunTimes);
+                
             }
 
             Console.WriteLine();
@@ -1119,7 +1115,7 @@ internal class Program
                 var localCreate = volumeInfo.CreationTime;
 
                 Log.Information(
-                    "#{VolumeNumber}: Name: {DeviceName} Serial: {SerialNumber} Created: {LocalCreate:dt} Directories: {DirectoryNamesCount:N0} File references: {FileReferencesCount:N0}",
+                    "#{VolumeNumber}: Name: {DeviceName} Serial: {SerialNumber} Created: {LocalCreate} Directories: {DirectoryNamesCount:N0} File references: {FileReferencesCount:N0}",
                     volnum, volumeInfo.DeviceName, volumeInfo.SerialNumber, localCreate,
                     volumeInfo.DirectoryNames.Count, volumeInfo.FileReferences.Count);
                 volnum += 1;
@@ -1150,7 +1146,7 @@ internal class Program
                     {
                         if (directoryName.ToLower().Contains(keyword))
                         {
-                            Log.Fatal("{DirIndex}: {DirectoryName}",dirIndex.ToString(dirFormat),directoryName);
+                            Log.Fatal("{DirIndex:0#}: {DirectoryName} (Keyword {Kw})",dirIndex,directoryName,true);
                             found = true;
                             break;
                         }
@@ -1158,7 +1154,7 @@ internal class Program
 
                     if (!found)
                     {
-                        Log.Information("{DirIndex}: {DirectoryName}",dirIndex.ToString(dirFormat),directoryName);
+                        Log.Information("{DirIndex:0#}: {DirectoryName}",dirIndex,directoryName);
                     }
 
                     dirIndex += 1;
@@ -1173,9 +1169,9 @@ internal class Program
 
             foreach (var filename in pf.Filenames)
             {
-                if (filename.Contains(pf.Header.ExecutableFilename))
+                if (filename.EndsWith(pf.Header.ExecutableFilename))
                 {
-                    Log.Information("{FileIndex}: {Filename}",fileIndex.ToString(fileFormat),filename);
+                    Log.Information("{FileIndex:0#}: {Filename} (Executable: {Exe}) ",fileIndex,filename,true);
                 }
                 else
                 {
@@ -1184,7 +1180,7 @@ internal class Program
                     {
                         if (filename.ToLower().Contains(keyword))
                         {
-                            Log.Information("{FileIndex}: {Filename}", fileIndex.ToString(fileFormat), filename);
+                            Log.Information("{FileIndex:0#}: {Filename} (Keyword: {Kw})", fileIndex, filename,true);
                             found = true;
                             break;
                         }
@@ -1192,7 +1188,7 @@ internal class Program
 
                     if (!found)
                     {
-                        Log.Information("{FileIndex}: {Filename}",fileIndex.ToString(fileFormat),filename);
+                        Log.Information("{FileIndex:0#}: {Filename}",fileIndex,filename);
                     }
                 }
 
@@ -1205,14 +1201,44 @@ internal class Program
         {
             Console.WriteLine();
         }
-
-
         if (q == false)
         {
             Console.WriteLine();
         }
     }
 
+    class DateTimeOffsetFormatter : IFormatProvider, ICustomFormatter
+    {
+        private readonly IFormatProvider _innerFormatProvider;
+
+        public DateTimeOffsetFormatter(IFormatProvider innerFormatProvider)
+        {
+            _innerFormatProvider = innerFormatProvider;
+        }
+
+        public object GetFormat(Type formatType)
+        {
+            return formatType == typeof(ICustomFormatter) ? this : _innerFormatProvider.GetFormat(formatType);
+        }
+
+        public string Format(string format, object arg, IFormatProvider formatProvider)
+        {
+            if (arg is DateTimeOffset)
+            {
+                var size = (DateTimeOffset)arg;
+                return size.ToString(ActiveDateTimeFormat);
+            }
+
+            var formattable = arg as IFormattable;
+            if (formattable != null)
+            {
+                return formattable.ToString(format, _innerFormatProvider);
+            }
+
+            return arg.ToString();
+        }
+    }
+    
     private static IPrefetch LoadFile(string pfFile, bool q, string dt)
     {
         var pfname = pfFile;
@@ -1224,7 +1250,7 @@ internal class Program
 
         if (q == false)
         {
-            Log.Information("Processing '{Pfname}'",pfname);
+            Log.Information("Processing {Pfname}",pfname);
             Console.WriteLine();
         }
 
@@ -1238,33 +1264,33 @@ internal class Program
 
             if (pf.ParsingError)
             {
-                _failedFiles.Add($"'{pfname}' is corrupt and did not parse completely!");
-                Log.Fatal("'{Pfname}' FILE DID NOT PARSE COMPLETELY!",pfname);
+                _failedFiles.Add($"{pfname} is corrupt and did not parse completely!");
+                Log.Fatal("{Pfname} FILE DID NOT PARSE COMPLETELY!",pfname);
                 Console.WriteLine();
             }
 
             if (q == false)
             {
-                DisplayFile(pf, false, dt);
+                DisplayFile(pf, false, ActiveDateTimeFormat);
             }
 
-            Log.Information("---------- Processed '{PfName}' in {TotalSeconds:N8} seconds ----------",pfname,sw.Elapsed.TotalSeconds);
+            Log.Information("---------- Processed {PfName} in {TotalSeconds:N8} seconds ----------",pfname,sw.Elapsed.TotalSeconds);
 
             return pf;
         }
         catch (ArgumentNullException an)
         {
-            Log.Error("Error opening '{Pfname}'. This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files",pfname);
+            Log.Error("Error opening {Pfname}. This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files",pfname);
             Console.WriteLine();
             _failedFiles.Add(
-                $"'{pfname}' ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
+                $"{pfname} ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
         }
         catch (Exception ex)
         {
-            Log.Error(ex,"Error opening '{Pfname}'. Message: {Message}",pfname,ex.Message);
+            Log.Error(ex,"Error opening {Pfname}. Message: {Message}",pfname,ex.Message);
             Console.WriteLine();
 
-            _failedFiles.Add($"'{pfname}' ==> ({ex.Message})");
+            _failedFiles.Add($"{pfname} ==> ({ex.Message})");
         }
 
         return null;
