@@ -25,12 +25,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Exceptionless;
-using NLog;
-using NLog.Config;
-using NLog.Targets;
+using Exceptionless.Logging;
 using PECmd.Properties;
 using Prefetch;
 using RawCopy;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using ServiceStack;
 using ServiceStack.Text;
 using CsvWriter = CsvHelper.CsvWriter;
@@ -41,7 +42,6 @@ namespace PECmd;
 internal class Program
 {
     private const string VssDir = @"C:\___vssMount";
-    private static Logger _logger;
 
     private static readonly string _preciseTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff";
 
@@ -86,11 +86,7 @@ internal class Program
     {
         ExceptionlessClient.Default.Startup("x3MPpeQSBUUsXl3DjekRQ9kYjyN3cr5JuwdoOBpZ");
 
-        SetupNLog();
-
         _keywords = new HashSet<string> { "temp", "tmp" };
-
-        _logger = LogManager.GetCurrentClassLogger();
 
         _rootCommand = new RootCommand
         {
@@ -168,11 +164,45 @@ internal class Program
         _rootCommand.Handler = CommandHandler.Create(DoWork);
 
         await _rootCommand.InvokeAsync(args);
+        
+        Log.CloseAndFlush();
     }
 
 
     private static void DoWork(string f, string d, string k, string o, bool q, string json, string jsonf, string csv, string csvf, string html, string dt, bool mp, bool vss, bool dedupe, bool debug, bool trace)
     {
+        var levelSwitch = new LoggingLevelSwitch();
+
+        var template = "{Message:lj}{NewLine}{Exception}";
+
+        if (debug)
+        {
+            levelSwitch.MinimumLevel = LogEventLevel.Debug;
+            template = "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}";
+        }
+
+        if (trace)
+        {
+            levelSwitch.MinimumLevel = LogEventLevel.Verbose;
+            template = "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}";
+        }
+        
+        var conf = new LoggerConfiguration()
+            .WriteTo.Console(outputTemplate: template)
+            .MinimumLevel.ControlledBy(levelSwitch);
+      
+        Log.Logger = conf.CreateLogger();
+        
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Console.WriteLine();
+            Log.Fatal("Non-Windows platforms not supported due to the need to load decompression specific Windows libraries! Exiting...");
+            Console.WriteLine();
+            Environment.Exit(0);
+            return;
+        }
+
+        
         if (f.IsNullOrEmpty() && d.IsNullOrEmpty())
         {
             var helpBld = new HelpBuilder(LocalizationResources.Instance, Console.WindowWidth);
@@ -180,21 +210,21 @@ internal class Program
 
             helpBld.Write(hc);
 
-            _logger.Warn("Either -f or -d is required. Exiting");
+            Log.Warning("Either -f or -d is required. Exiting");
             return;
         }
 
         if (f.IsNullOrEmpty() == false &&
             !File.Exists(f))
         {
-            _logger.Warn($"File '{f}' not found. Exiting");
+            Log.Warning("File '{F}' not found. Exiting",f);
             return;
         }
 
         if (d.IsNullOrEmpty() == false &&
             !Directory.Exists(d))
         {
-            _logger.Warn($"Directory '{d}' not found. Exiting");
+            Log.Warning("Directory '{D}' not found. Exiting",d);
             return;
         }
 
@@ -209,56 +239,36 @@ internal class Program
             }
         }
 
-
-        _logger.Info(Header);
-        _logger.Info("");
-        _logger.Info($"Command line: {string.Join(" ", Environment.GetCommandLineArgs().Skip(1))}");
+        Log.Information("{Header}",Header);
+        Console.WriteLine();
+        
+        Log.Information("Command line: {Args}",string.Join(" ", Environment.GetCommandLineArgs().Skip(1)));
 
         if (IsAdministrator() == false)
         {
-            _logger.Fatal("\r\nWarning: Administrator privileges not found!");
+            Console.WriteLine();
+            Log.Information("Warning: Administrator privileges not found!");
         }
-
-        if (debug)
-        {
-            foreach (var r in LogManager.Configuration.LoggingRules)
-            {
-                r.EnableLoggingForLevel(LogLevel.Debug);
-            }
-
-            LogManager.ReconfigExistingLoggers();
-            _logger.Debug("Enabled debug messages...");
-        }
-
-        if (trace)
-        {
-            foreach (var r in LogManager.Configuration.LoggingRules)
-            {
-                r.EnableLoggingForLevel(LogLevel.Trace);
-            }
-
-            LogManager.ReconfigExistingLoggers();
-            _logger.Trace("Enabled trace messages...");
-        }
-
+      
         if (vss & (IsAdministrator() == false))
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 vss = false;
-                _logger.Warn("--vss is not supported on non-Windows platforms. Disabling...");
+                Log.Warning("--vss is not supported on non-Windows platforms. Disabling...");
             }
         }
 
         if (vss & (IsAdministrator() == false))
         {
-            _logger.Error("--vss is present, but administrator rights not found. Exiting\r\n");
+            Log.Error("--vss is present, but administrator rights not found. Exiting");
+            Console.WriteLine();
             return;
         }
 
-        _logger.Info("");
-        _logger.Info($"Keywords: {string.Join(", ", _keywords)}");
-        _logger.Info("");
+        Console.WriteLine();
+        Log.Information("Keywords: {Keywords}",string.Join(", ", _keywords));
+        Console.WriteLine();
 
         if (mp)
         {
@@ -307,11 +317,11 @@ internal class Program
                             }
 
                             PrefetchFile.SavePrefetch(o, pf);
-                            _logger.Info($"Saved prefetch bytes to '{o}'");
+                            Log.Information("Saved prefetch bytes to '{O}'",o);
                         }
                         catch (Exception e)
                         {
-                            _logger.Error($"Unable to save prefetch file. Error: {e.Message}");
+                            Log.Error(e,"Unable to save prefetch file. Error: {Message}",e.Message);
                         }
                     }
 
@@ -341,19 +351,19 @@ internal class Program
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.Error(
-                    $"Unable to access '{f}'. Are you running as an administrator? Error: {ex.Message}");
+                Log.Error(ex,
+                    "Unable to access '{F}'. Are you running as an administrator? Error: {Message}",f,ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.Error(
-                    $"Error parsing prefetch file '{f}'. Error: {ex.Message}");
+                Log.Error(ex,
+                    "Error parsing prefetch file '{F}'. Error: {Message}",f,ex.Message);
             }
         }
         else
         {
-            _logger.Info($"Looking for prefetch files in '{d}'");
-            _logger.Info("");
+            Log.Information("Looking for prefetch files in '{D}'",d);
+            Console.WriteLine();
 
             var pfFiles = new List<string>();
 
@@ -372,13 +382,13 @@ internal class Program
 
                 if (fsei.FileSize == 0)
                 {
-                    _logger.Debug($"Skipping '{fsei.FullPath}' since size is 0");
+                    Log.Debug("Skipping '{FullPath}' since size is 0",fsei.FullPath);
                     return false;
                 }
 
                 if (fsei.FullPath.ToUpperInvariant().Contains("[ROOT]"))
                 {
-                    _logger.Fatal($"WARNING: FTK Imager detected! Do not use FTK Imager to mount image files as it does not work properly! Use Arsenal Image Mounter instead");
+                    Log.Warning("WARNING: FTK Imager detected! Do not use FTK Imager to mount image files as it does not work properly! Use Arsenal Image Mounter instead");
                     return true;
                 }
 
@@ -386,10 +396,10 @@ internal class Program
                 var ads = fsi.EnumerateAlternateDataStreams().Where(t => t.StreamName.Length > 0).ToList();
                 if (ads.Count > 0)
                 {
-                    _logger.Fatal($"WARNING: '{fsei.FullPath}' has at least one Alternate Data Stream:");
+                    Log.Warning("WARNING: '{FullPath}' has at least one Alternate Data Stream",fsei.FullPath);
                     foreach (var alternateDataStreamInfo in ads)
                     {
-                        _logger.Info($"Name: {alternateDataStreamInfo.StreamName}");
+                        Log.Information("Name: {StreamName}",alternateDataStreamInfo.StreamName);
 
                         var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
                             FileShare.Read, Alphaleonis.Win32.Filesystem.PathFormat.LongFullPath);
@@ -402,11 +412,10 @@ internal class Program
                         }
                         catch (Exception e)
                         {
-                            _logger.Warn($"Could not process '{fsei.FullPath}'. Error: {e.Message}");
+                            Log.Warning(e,"Could not process '{FullPath}'. Error: {Message}",fsei.FullPath,e.Message);
                         }
 
-                        _logger.Info(
-                            $"---------- Processed '{fsei.FullPath}' ----------");
+                        Log.Information("---------- Processed '{FullPath}' ----------",fsei.FullPath);
 
                         if (pf1 != null)
                         {
@@ -469,7 +478,7 @@ internal class Program
 
                         var target = Path.Combine(vssDir, stem);
 
-                        _logger.Fatal($"Searching 'VSS{target.Replace($"{VssDir}\\", "")}' for prefetch files...");
+                        Log.Information("Searching '{Target}' for prefetch files...",$"VSS{target.Replace($"{VssDir}\\", "")}");
 
 #if !NET6_0
                     files2 =
@@ -492,11 +501,12 @@ internal class Program
                         {
                             pfFiles.AddRange(files2);
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
-                            _logger.Fatal($"Could not access all files in '{d}'");
-                            _logger.Error("");
-                            _logger.Fatal("Rerun the program with Administrator privileges to try again\r\n");
+                            Log.Error(e,"Could not access all files in '{D}'",d);
+                            Console.WriteLine();
+                            Log.Error("Rerun the program with Administrator privileges to try again");
+                            Console.WriteLine();
                             //Environment.Exit(-1);
                         }
                     }
@@ -504,19 +514,20 @@ internal class Program
             }
             catch (UnauthorizedAccessException ua)
             {
-                _logger.Error(
-                    $"Unable to access '{d}'. Are you running as an administrator? Error: {ua.Message}");
+                Log.Error(ua,
+                    "Unable to access '{D}'. Are you running as an administrator? Error: {Message}",d,ua.Message);
                 return;
             }
             catch (Exception ex)
             {
-                _logger.Error(
-                    $"Error getting prefetch files in '{d}'. Error: {ex.Message}");
+                Log.Error(ex,
+                    "Error getting prefetch files in '{D}'. Error: {Message}",d,ex.Message);
                 return;
             }
 
-            _logger.Info($"\r\nFound {pfFiles.Count:N0} Prefetch files");
-            _logger.Info("");
+            Console.WriteLine();
+            Log.Information("Found {Count:N0} Prefetch files",pfFiles.Count);
+            Console.WriteLine();
 
             var sw = new Stopwatch();
             sw.Start();
@@ -527,24 +538,22 @@ internal class Program
             {
                 if (File.Exists(file) == false)
                 {
-                    _logger.Warn($"File '{file}' does not seem to exist any more! Skipping");
+                    Log.Warning("File '{File}' does not seem to exist any more! Skipping",file);
 
                     continue;
                 }
 
                 if (dedupe)
                 {
-                    using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read))
+                    using var fs = new FileStream(file, FileMode.Open, FileAccess.Read);
+                    var sha = Helper.GetSha1FromStream(fs, 0);
+                    if (seenHashes.Contains(sha))
                     {
-                        var sha = Helper.GetSha1FromStream(fs, 0);
-                        if (seenHashes.Contains(sha))
-                        {
-                            _logger.Debug($"Skipping '{file}' as a file with SHA-1 '{sha}' has already been processed");
-                            continue;
-                        }
-
-                        seenHashes.Add(sha);
+                        Log.Debug("Skipping '{File}' as a file with SHA-1 '{Sha}' has already been processed",file,sha);
+                        continue;
                     }
+
+                    seenHashes.Add(sha);
                 }
 
                 var pf = LoadFile(file, q, dt);
@@ -559,26 +568,26 @@ internal class Program
 
             if (q)
             {
-                _logger.Info("");
+                Console.WriteLine();
             }
 
-            _logger.Info(
-                $"Processed {pfFiles.Count - _failedFiles.Count:N0} out of {pfFiles.Count:N0} files in {sw.Elapsed.TotalSeconds:N4} seconds");
+            Log.Information(
+                "Processed {FileCount:N0} out of {TotalFilesCount:N0} files in {TotalSeconds:N4} seconds",pfFiles.Count - _failedFiles.Count,pfFiles.Count,sw.Elapsed.TotalSeconds);
 
             if (_failedFiles.Count > 0)
             {
-                _logger.Info("");
-                _logger.Warn("Failed files");
+                Console.WriteLine();
+                Log.Warning("Failed files");
                 foreach (var failedFile in _failedFiles)
                 {
-                    _logger.Info($"  {failedFile}");
+                    Log.Information("  {FailedFile}",failedFile);
                 }
             }
         }
 
         if (_processedFiles.Count > 0)
         {
-            _logger.Info("");
+            Console.WriteLine();
 
             try
             {
@@ -600,8 +609,7 @@ internal class Program
 
                     if (Directory.Exists(json) == false)
                     {
-                        _logger.Warn(
-                            $"'{json} does not exist. Creating...'");
+                        Log.Information("'{Json} does not exist. Creating...'",json);
                         Directory.CreateDirectory(json);
                     }
 
@@ -612,7 +620,7 @@ internal class Program
 
                     var outFile = Path.Combine(json, outName);
 
-                    _logger.Warn($"Saving json output to '{outFile}'");
+                    Log.Information("Saving json output to '{OutFile}'",outFile);
 
                     streamWriterJson = new StreamWriter(outFile);
                     JsConfig.DateHandler = DateHandler.ISO8601;
@@ -641,13 +649,12 @@ internal class Program
 
                     if (Directory.Exists(csv) == false)
                     {
-                        _logger.Warn(
-                            $"Path to '{csv}' does not exist. Creating...");
+                        Log.Information("Path to '{Csv}' does not exist. Creating...",csv);
                         Directory.CreateDirectory(csv);
                     }
 
-                    _logger.Warn($"CSV output will be saved to '{outFile}'");
-                    _logger.Warn($"CSV time line output will be saved to '{outFileTl}'");
+                    Log.Information("CSV output will be saved to '{OutFile}'",outFile);
+                    Log.Information("CSV time line output will be saved to '{OutFileTl}'",outFileTl);
 
                     try
                     {
@@ -665,8 +672,8 @@ internal class Program
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error(
-                            $"Unable to open '{outFile}' for writing. CSV export canceled. Error: {ex.Message}");
+                        Log.Error(ex,
+                            "Unable to open '{OutFile}' for writing. CSV export canceled. Error: {Message}",outFile,ex.Message);
                     }
                 }
 
@@ -677,8 +684,7 @@ internal class Program
                 {
                     if (Directory.Exists(html) == false)
                     {
-                        _logger.Warn(
-                            $"'{html} does not exist. Creating...'");
+                        Log.Information("'{Html} does not exist. Creating...'",html);
                         Directory.CreateDirectory(html);
                     }
 
@@ -708,7 +714,7 @@ internal class Program
                     var outFile = Path.Combine(html, outDir,
                         "index.xhtml");
 
-                    _logger.Warn($"Saving HTML output to '{outFile}'");
+                    Log.Information("Saving HTML output to '{OutFile}'",outFile);
 
                     xml = new XmlTextWriter(outFile, Encoding.UTF8)
                     {
@@ -765,8 +771,8 @@ internal class Program
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error(
-                                $"Error getting time line record for '{processedFile.SourceFilename}' to '{csv}'. Error: {ex.Message}");
+                            Log.Error(ex,
+                                "Error getting time line record for '{SourceFilename}' to '{Csv}'. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
                         }
 
                         try
@@ -776,8 +782,7 @@ internal class Program
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error(
-                                $"Error writing CSV record for '{processedFile.SourceFilename}' to '{csv}'. Error: {ex.Message}");
+                            Log.Error(ex,"Error writing CSV record for '{SourceFilename}' to '{Csv}'. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
                         }
 
                         //hack
@@ -883,7 +888,7 @@ internal class Program
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error exporting data! Error: {ex.Message}");
+                Log.Error(ex,"Error exporting data: {Message}",ex.Message);
             }
         }
 
@@ -905,44 +910,6 @@ internal class Program
         }
     }
 
-// private static object GetPartialDetails(IPrefetch pf, string dt)
-//         {
-//             var sb = new StringBuilder();
-//
-//             if (string.IsNullOrEmpty(pf.SourceFilename) == false)
-//             {
-//                 sb.AppendLine($"Source file name: {pf.SourceFilename}");
-//             }
-//
-//             if (pf.SourceCreatedOn.Year != 1601)
-//             {
-//                 sb.AppendLine(
-//                     $"Accessed on: {pf.SourceCreatedOn.ToUniversalTime().ToString(dt)}");
-//             }
-//
-//             if (pf.SourceModifiedOn.Year != 1601)
-//             {
-//                 sb.AppendLine(
-//                     $"Modified on: {pf.SourceModifiedOn.ToUniversalTime().ToString(dt)}");
-//             }
-//
-//             if (pf.SourceAccessedOn.Year != 1601)
-//             {
-//                 sb.AppendLine(
-//                     $"Last accessed on: {pf.SourceAccessedOn.ToUniversalTime().ToString(dt)}");
-//             }
-//
-//             if (pf.Header != null)
-//             {
-//                 if (string.IsNullOrEmpty(pf.Header.Signature) == false)
-//                 {
-//                     sb.AppendLine($"Source file name: {pf.SourceFilename}");
-//                 }
-//             }
-//
-//
-//             return sb.ToString();
-//         }
 
 
     private static CsvOut GetCsvFormat(IPrefetch pf, string dt)
@@ -1090,14 +1057,16 @@ internal class Program
         if (pf.ParsingError)
         {
             _failedFiles.Add($"'{pf.SourceFilename}' is corrupt and did not parse completely!");
-            _logger.Fatal($"'{pf.SourceFilename}' FILE DID NOT PARSE COMPLETELY!\r\n");
+            Log.Warning("'{SourceFilename}' FILE DID NOT PARSE COMPLETELY!",pf.SourceFilename);
+            Console.WriteLine();
         }
 
         if (q == false)
         {
             if (pf.ParsingError)
             {
-                _logger.Fatal("PARTIAL OUTPUT SHOWN BELOW\r\n");
+                Log.Warning("PARTIAL OUTPUT SHOWN BELOW");
+                Console.WriteLine();
             }
 
 
@@ -1105,11 +1074,10 @@ internal class Program
             var modified = pf.SourceModifiedOn;
             var accessed = pf.SourceAccessedOn;
 
-            _logger.Info($"Created on: {created.ToString(dt)}");
-            _logger.Info($"Modified on: {modified.ToString(dt)}");
-            _logger.Info(
-                $"Last accessed on: {accessed.ToString(dt)}");
-            _logger.Info("");
+            Log.Information("Created on: {CreatedOn:dt}",created);
+            Log.Information("Modified on: {Modified:dt}",modified);
+            Log.Information("Last accessed on: {Accessed:dt}",accessed);
+            Console.WriteLine();
 
             var dirString = pf.TotalDirectoryCount.ToString(CultureInfo.InvariantCulture);
             var dd = new string('0', dirString.Length);
@@ -1119,49 +1087,45 @@ internal class Program
             var ff = new string('0', fString.Length);
             var fileFormat = $"{ff}.##";
 
-            _logger.Info($"Executable name: {pf.Header.ExecutableFilename}");
-            _logger.Info($"Hash: {pf.Header.Hash}");
-            _logger.Info($"File size (bytes): {pf.Header.FileSize:N0}");
-            _logger.Info($"Version: {GetDescriptionFromEnumValue(pf.Header.Version)}");
-            _logger.Info("");
+            Log.Information("Executable name: {ExecutableFilename}",pf.Header.ExecutableFilename);
+            Log.Information("Hash: {Hash}",pf.Header.Hash);
+            Log.Information("File size (bytes): {FileSize:N0}",pf.Header.FileSize);
+            Log.Information("Version: {Description}",GetDescriptionFromEnumValue(pf.Header.Version));
+        Console.WriteLine();
 
-            _logger.Info($"Run count: {pf.RunCount:N0}");
+            Log.Information("Run count: {RunCount:N0}",pf.RunCount);
 
             var lastRun = pf.LastRunTimes.First();
 
-
-            _logger.Warn($"Last run: {lastRun.ToString(dt)}");
+            Log.Information("Last run: {lastRun:dt}",lastRun);
 
             if (pf.LastRunTimes.Count > 1)
             {
                 var lastRuns = pf.LastRunTimes.Skip(1).ToList();
 
-
                 var otherRunTimes = string.Join(", ",
                     lastRuns.Select(t => t.ToString(dt)));
 
-                _logger.Info($"Other run times: {otherRunTimes}");
+                Log.Information("Other run times: {OtherRunTimes}",otherRunTimes);
             }
 
-//
-//                if (_fluentCommandLineParser.Object.Quiet == false)
-//                {
-            _logger.Info("");
-            _logger.Info("Volume information:");
-            _logger.Info("");
+            Console.WriteLine();
+            Log.Information("Volume information:");
+            Console.WriteLine();
             var volnum = 0;
 
             foreach (var volumeInfo in pf.VolumeInformation)
             {
                 var localCreate = volumeInfo.CreationTime;
 
-
-                _logger.Info(
-                    $"#{volnum}: Name: {volumeInfo.DeviceName} Serial: {volumeInfo.SerialNumber} Created: {localCreate.ToString(dt)} Directories: {volumeInfo.DirectoryNames.Count:N0} File references: {volumeInfo.FileReferences.Count:N0}");
+                Log.Information(
+                    "#{VolumeNumber}: Name: {DeviceName} Serial: {SerialNumber} Created: {LocalCreate:dt} Directories: {DirectoryNamesCount:N0} File references: {FileReferencesCount:N0}",
+                    volnum, volumeInfo.DeviceName, volumeInfo.SerialNumber, localCreate,
+                    volumeInfo.DirectoryNames.Count, volumeInfo.FileReferences.Count);
                 volnum += 1;
             }
 
-            _logger.Info("");
+            Console.WriteLine();
 
             var totalDirs = pf.TotalDirectoryCount;
             if (pf.Header.Version == Version.WinXpOrWin2K3)
@@ -1174,8 +1138,8 @@ internal class Program
                 }
             }
 
-            _logger.Info($"Directories referenced: {totalDirs:N0}");
-            _logger.Info("");
+            Log.Information("Directories referenced: {TotalDirs:N0}",totalDirs);
+            Console.WriteLine();
             var dirIndex = 0;
             foreach (var volumeInfo in pf.VolumeInformation)
             {
@@ -1186,7 +1150,7 @@ internal class Program
                     {
                         if (directoryName.ToLower().Contains(keyword))
                         {
-                            _logger.Fatal($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                            Log.Fatal("{DirIndex}: {DirectoryName}",dirIndex.ToString(dirFormat),directoryName);
                             found = true;
                             break;
                         }
@@ -1194,24 +1158,24 @@ internal class Program
 
                     if (!found)
                     {
-                        _logger.Info($"{dirIndex.ToString(dirFormat)}: {directoryName}");
+                        Log.Information("{DirIndex}: {DirectoryName}",dirIndex.ToString(dirFormat),directoryName);
                     }
 
                     dirIndex += 1;
                 }
             }
 
-            _logger.Info("");
+            Console.WriteLine();
 
-            _logger.Info($"Files referenced: {pf.Filenames.Count:N0}");
-            _logger.Info("");
+            Log.Information("Files referenced: {FilenamesCount:N0}",pf.Filenames.Count);
+            Console.WriteLine();
             var fileIndex = 0;
 
             foreach (var filename in pf.Filenames)
             {
                 if (filename.Contains(pf.Header.ExecutableFilename))
                 {
-                    _logger.Error($"{fileIndex.ToString(fileFormat)}: {filename}");
+                    Log.Information("{FileIndex}: {Filename}",fileIndex.ToString(fileFormat),filename);
                 }
                 else
                 {
@@ -1220,7 +1184,7 @@ internal class Program
                     {
                         if (filename.ToLower().Contains(keyword))
                         {
-                            _logger.Fatal($"{fileIndex.ToString(fileFormat)}: {filename}");
+                            Log.Information("{FileIndex}: {Filename}", fileIndex.ToString(fileFormat), filename);
                             found = true;
                             break;
                         }
@@ -1228,7 +1192,7 @@ internal class Program
 
                     if (!found)
                     {
-                        _logger.Info($"{fileIndex.ToString(fileFormat)}: {filename}");
+                        Log.Information("{FileIndex}: {Filename}",fileIndex.ToString(fileFormat),filename);
                     }
                 }
 
@@ -1239,13 +1203,13 @@ internal class Program
 
         if (q == false)
         {
-            _logger.Info("");
+            Console.WriteLine();
         }
 
 
         if (q == false)
         {
-            _logger.Info("\r\n");
+            Console.WriteLine();
         }
     }
 
@@ -1260,8 +1224,8 @@ internal class Program
 
         if (q == false)
         {
-            _logger.Warn($"Processing '{pfname}'");
-            _logger.Info("");
+            Log.Information("Processing '{Pfname}'",pfname);
+            Console.WriteLine();
         }
 
         var sw = new Stopwatch();
@@ -1269,12 +1233,14 @@ internal class Program
 
         try
         {
+            
             var pf = PrefetchFile.Open(pfFile);
 
             if (pf.ParsingError)
             {
                 _failedFiles.Add($"'{pfname}' is corrupt and did not parse completely!");
-                _logger.Fatal($"'{pfname}' FILE DID NOT PARSE COMPLETELY!\r\n");
+                Log.Fatal("'{Pfname}' FILE DID NOT PARSE COMPLETELY!",pfname);
+                Console.WriteLine();
             }
 
             if (q == false)
@@ -1282,23 +1248,21 @@ internal class Program
                 DisplayFile(pf, false, dt);
             }
 
-            _logger.Info(
-                $"---------- Processed '{pfname}' in {sw.Elapsed.TotalSeconds:N8} seconds ----------");
+            Log.Information("---------- Processed '{PfName}' in {TotalSeconds:N8} seconds ----------",pfname,sw.Elapsed.TotalSeconds);
 
             return pf;
         }
         catch (ArgumentNullException an)
         {
-            _logger.Error(
-                $"Error opening '{pfname}'.\r\n\r\nThis appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files");
-            _logger.Info("");
+            Log.Error("Error opening '{Pfname}'. This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files",pfname);
+            Console.WriteLine();
             _failedFiles.Add(
                 $"'{pfname}' ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error opening '{pfname}'. Message: {ex.Message}");
-            _logger.Info("");
+            Log.Error(ex,"Error opening '{Pfname}'. Message: {Message}",pfname,ex.Message);
+            Console.WriteLine();
 
             _failedFiles.Add($"'{pfname}' ==> ({ex.Message})");
         }
@@ -1306,30 +1270,7 @@ internal class Program
         return null;
     }
 
-    private static void SetupNLog()
-    {
-        if (File.Exists(Path.Combine(BaseDirectory, "Nlog.config")))
-        {
-            return;
-        }
-
-        var config = new LoggingConfiguration();
-        var loglevel = LogLevel.Info;
-
-        var layout = @"${message}";
-
-        var consoleTarget = new ColoredConsoleTarget();
-
-        config.AddTarget("console", consoleTarget);
-
-        consoleTarget.Layout = layout;
-
-        var rule1 = new LoggingRule("*", loglevel, consoleTarget);
-        config.LoggingRules.Add(rule1);
-
-        LogManager.Configuration = config;
-    }
-
+  
     public sealed class CsvOutTl
     {
         public string RunTime { get; set; }
