@@ -15,8 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Exceptionless;
-using Exceptionless.Logging;
-using PECmd.Properties;
+
 using Prefetch;
 using RawCopy;
 using Serilog;
@@ -710,13 +709,13 @@ internal class Program
                         Directory.CreateDirectory(styleDir);
                     }
 
-                    File.WriteAllText(Path.Combine(styleDir, "normalize.css"), Resources.normalize);
-                    File.WriteAllText(Path.Combine(styleDir, "style.css"), Resources.style);
+                    File.WriteAllText(Path.Combine(styleDir, "normalize.css"), Encoding.Default.GetString(Convert.FromBase64String(ExternalFiles.Normalize)));
+                    File.WriteAllText(Path.Combine(styleDir, "style.css"), Encoding.Default.GetString(Convert.FromBase64String(ExternalFiles.Style)));
 
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        Resources.directories.Save(Path.Combine(styleDir, "directories.png"));
-                        Resources.filesloaded.Save(Path.Combine(styleDir, "filesloaded.png"));
+                        File.WriteAllBytes(Path.Combine(styleDir, "directories.png"),Convert.FromBase64String(ExternalFiles.Directories));
+                        File.WriteAllBytes(Path.Combine(styleDir, "filesloaded.png"),Convert.FromBase64String(ExternalFiles.FilesLoaded));
                     }
 
                     var outFile = Path.Combine(html, outDir,
@@ -1338,3 +1337,4 @@ internal class Program
         public bool ParsingError { get; set; }
     }
 }
+
