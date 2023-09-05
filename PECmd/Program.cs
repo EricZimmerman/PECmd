@@ -58,7 +58,7 @@ internal class Program
         "\r\nhttps://github.com/EricZimmerman/PECmd";
 
     private static readonly string Footer = @"Examples: PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf""" + "\r\n\t " +
-                                            @"   PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf"" --json ""D:\jsonOutput"" --jsonpretty" +
+                                            @"   PECmd.exe -f ""C:\Temp\CALC.EXE-3FBEF7FD.pf"" --json ""D:\jsonOutput""" +
                                             "\r\n\t " +
                                             @"   PECmd.exe -d ""C:\Temp"" -k ""system32, fonts""" + "\r\n\t " +
                                             @"   PECmd.exe -d ""C:\Temp"" --csv ""c:\temp"" --csvf foo.csv --json c:\temp\json" +
