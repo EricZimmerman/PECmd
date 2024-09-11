@@ -20,6 +20,9 @@
         <PackageReference Include="Prefetch" Version="1.2.4" />
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta2.21617.1" />
         <PackageReference Include="System.CommandLine.NamingConventionBinder" Version="2.0.0-beta2.21617.1" />
+        <PackageReference Include="System.Net.Http" Version="4.3.4" />
+        <PackageReference Include="System.Private.Uri" Version="4.3.2" />
+        <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     </ItemGroup>
     <ItemGroup>
         <Content Include="PcDesktopConfigure.ico" />
