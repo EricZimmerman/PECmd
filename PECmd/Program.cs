@@ -376,7 +376,7 @@ internal class Program
 
             IEnumerable<string> files2;
 
-#if !NET6_0
+#if !NET6_0 && !NET9_0
         var enumerationFilters = new Alphaleonis.Win32.Filesystem.DirectoryEnumerationFilters();
         enumerationFilters.InclusionFilter = fsei =>
         {
@@ -487,7 +487,7 @@ internal class Program
 
                         Log.Information("Searching {Target} for prefetch files...",$"VSS{target.Replace($"{VssDir}\\", "")}");
 
-#if !NET6_0
+#if !NET6_0 && !NET9_0
                     files2 =
                         Directory.EnumerateFileSystemEntries(target, dirEnumOptions, enumerationFilters);
 
@@ -903,7 +903,7 @@ internal class Program
                     Directory.Delete(directory);
                 }
 
-#if !NET6_0
+#if !NET6_0 && !NET9_0
                 Directory.Delete(VssDir, true, true);
 #else
                 Directory.Delete(VssDir, true);
