@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
-using System.CommandLine.NamingConventionBinder;
+using System.CommandLine.Invocation;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -25,7 +25,7 @@ using ServiceStack;
 using ServiceStack.Text;
 using CsvWriter = CsvHelper.CsvWriter;
 using Version = Prefetch.Version;
-#if NET462
+#if !NET9_0_OR_GREATER
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileInfo = Alphaleonis.Win32.Filesystem.FileInfo;
@@ -53,7 +53,7 @@ internal class Program
     private static List<IPrefetch> _processedFiles;
 
     private static readonly string Header =
-        $"PECmd version {Assembly.GetExecutingAssembly().GetName().Version}" +
+        $"PECmd version {Assembly.GetExecutingAssembly().GetName().Version.ToString(3)}" +
         "\r\n\r\nAuthor: Eric Zimmerman (saericzimmerman@gmail.com)" +
         "\r\nhttps://github.com/EricZimmerman/PECmd";
 
@@ -88,83 +88,127 @@ internal class Program
         ExceptionlessClient.Default.Startup("x3MPpeQSBUUsXl3DjekRQ9kYjyN3cr5JuwdoOBpZ");
 
         _keywords = new HashSet<string> { "temp", "tmp" };
+        
+        var fOpt = new Option<string>("-f")
+        {
+            Description = "File to process. Either this or -d is required"
+        };
+        
+        var dOpt = new Option<string>("-d")
+        {
+            Description = "Directory to recursively process. Either this or -f is required"
+        };
+        
+        var kOpt = new Option<string>("-k")
+        {
+            Description = "Comma separated list of keywords to highlight in output. By default, 'temp' and 'tmp' are highlighted. Any additional keywords will be added to these"
+        };
+        
+        var oOpt = new Option<string>("-o")
+        {
+            Description = "When specified, save prefetch file bytes to the given path. Useful to look at decompressed Win10 files"
+        };
+        var qOpt = new Option<bool>("-q")
+        {
+            Description = "Do not dump full details about each file processed. Speeds up processing when using --json or --csv",
+            DefaultValueFactory = _ => false
+        };
+        
+        var csvOpt = new Option<string>(
+            "--csv")
+        {
+            Description = "Directory to save CSV formatted results to. Be sure to include the full path in double quotes"
+        
+        };
+
+        var csvfOpt = new Option<string>(
+            "--csvf")
+        {
+            Description   = "File name to save CSV formatted results to. When present, overrides default name\r\n"
+        };
+        
+        var jsonOpt = new Option<string>(
+            "--json")
+        {
+            Description = "Directory to save JSON formatted results to. Be sure to include the full path in double quotes"
+        
+        };
+
+        var jsonfOpt = new Option<string>(
+            "--jsonf")
+        {
+            Description   = "File name to save JSON formatted results to. When present, overrides default name"
+        };
+        
+        var htmlOpt = new Option<string>(
+            "--html")
+        {
+            Description = "Directory to save xhtml formatted results to. Be sure to include the full path in double quotes"
+        
+        };
+
+        var dtOpt = new Option<string>(
+            "--dt"){
+            Description =        "The custom date/time format to use when displaying time stamps. See https://goo.gl/CNVq0k for options. Default is: yyyy-MM-dd HH:mm:ss",
+            DefaultValueFactory = _ => "yyyy-MM-dd HH:mm:ss"
+        };
+        
+        var mpOpt = new Option<bool>("--mp")
+        {
+            Description = "When true, display higher precision for timestamps",
+            DefaultValueFactory = _ => false
+        };
+        var vssOpt = new Option<bool>("--vss")
+        {
+            Description = "Process all Volume Shadow Copies that exist on drive specified by -f or -d",
+            DefaultValueFactory = _ => false
+        };
+        var dedupeOpt = new Option<bool>("--dedupe")
+        {
+            Description = "Deduplicate -f or -d & VSCs based on SHA-1. First file found wins",
+            DefaultValueFactory = _ => false
+        };
+        
+        
+        var debugOpt = new Option<bool>("--debug")
+        {
+            Description = "Show debug information during processing",
+            DefaultValueFactory = _ => false
+        };
+        var traceOpt = new Option<bool>("--trace")
+        {
+            Description = "Show trace information during processing",
+            DefaultValueFactory = _ => false
+        };
 
         _rootCommand = new RootCommand
         {
-            new Option<string>(
-                "-f",
-                "File to process. Either this or -d is required"),
-
-            new Option<string>(
-                "-d",
-                "Directory to recursively process. Either this or -f is required"),
-
-            
-            new Option<string>(
-                "-k",
-                "Comma separated list of keywords to highlight in output. By default, 'temp' and 'tmp' are highlighted. Any additional keywords will be added to these"),
-
-            new Option<string>(
-                "-o",
-                "When specified, save prefetch file bytes to the given path. Useful to look at decompressed Win10 files"),
-
-            new Option<bool>(
-                "-q",
-                getDefaultValue:()=>false,
-                "Do not dump full details about each file processed. Speeds up processing when using --json or --csv"),
-            
-            new Option<string>(
-                "--json",
-                "Directory to save JSON formatted results to. Be sure to include the full path in double quotes"),
-
-            new Option<string>(
-                "--jsonf",
-                "File name to save JSON formatted results to. When present, overrides default name"),
-
-            new Option<string>(
-                "--csv",
-                "Directory to save CSV formatted results to. Be sure to include the full path in double quotes"),
-
-            new Option<string>(
-                "--csvf",
-                "File name to save CSV formatted results to. When present, overrides default name\r\n"),
-            
-            new Option<string>(
-                "--html",
-                "Directory to save xhtml formatted results to. Be sure to include the full path in double quotes"),
-            
-            new Option<string>(
-                "--dt",
-                getDefaultValue:()=>"yyyy-MM-dd HH:mm:ss",
-                "The custom date/time format to use when displaying time stamps. See https://goo.gl/CNVq0k for options"),
-
-            new Option<bool>(
-                "--mp",
-                getDefaultValue:()=>false,
-                "When true, display higher precision for timestamps"),
-            new Option<bool>(
-                "--vss",
-                getDefaultValue:()=>false,
-                "Process all Volume Shadow Copies that exist on drive specified by -f or -d"),
-            new Option<bool>(
-                "--dedupe",
-                getDefaultValue:()=>false,
-                "Deduplicate -f or -d & VSCs based on SHA-1. First file found wins"),
-            new Option<bool>(
-                "--debug",
-                getDefaultValue:()=>false,
-                "Show debug information during processing"),
-            new Option<bool>(
-                "--trace",
-                getDefaultValue:()=>false,
-                "Show trace information during processing"),
+          fOpt,
+          dOpt,
+          kOpt,
+          oOpt,
+          qOpt,
+          csvOpt,
+          csvfOpt,
+          jsonOpt,
+          jsonfOpt,
+          htmlOpt,
+          dtOpt,
+          mpOpt,
+          vssOpt,
+          dedupeOpt,
+          dedupeOpt,
+          traceOpt
+          
         };
 
         _rootCommand.Description = Header + "\r\n\r\n" + Footer;
 
-        _rootCommand.Handler = CommandHandler.Create(DoWork);
+        _rootCommand.SetAction(result => DoWork(result.GetValue(fOpt), result.GetValue(dOpt), result.GetValue(kOpt),
+            result.GetValue(oOpt), result.GetValue(qOpt), result.GetValue(jsonfOpt), result.GetValue(jsonfOpt),
+            result.GetValue(csvOpt),result.GetValue(csvfOpt),result.GetValue(htmlOpt),result.GetValue(dtOpt),result.GetValue(mpOpt),result.GetValue(vssOpt),result.GetValue(dedupeOpt),result.GetValue(debugOpt),result.GetValue(traceOpt)));
 
-        await _rootCommand.InvokeAsync(args);
+        var foo = _rootCommand.Parse(args).InvokeAsync();
         
         Log.CloseAndFlush();
     }
@@ -216,12 +260,9 @@ internal class Program
         
         if (f.IsNullOrEmpty() && d.IsNullOrEmpty())
         {
-            var helpBld = new HelpBuilder(LocalizationResources.Instance, Console.WindowWidth);
-            var hc = new HelpContext(helpBld, _rootCommand, Console.Out);
+            var aaa = new CustomHelpAction(new HelpAction());
+            aaa.Invoke(_rootCommand.Parse("Either -f or -d is required. Exiting"));
 
-            helpBld.Write(hc);
-
-            Log.Warning("Either -f or -d is required. Exiting");
             return;
         }
 
@@ -376,7 +417,7 @@ internal class Program
 
             IEnumerable<string> files2;
 
-#if !NET6_0 && !NET9_0
+#if !NET9_0_OR_GREATER
         var enumerationFilters = new Alphaleonis.Win32.Filesystem.DirectoryEnumerationFilters();
         enumerationFilters.InclusionFilter = fsei =>
         {
@@ -399,7 +440,7 @@ internal class Program
                     return true;
                 }
 
-                var fsi = new FileInfo(fsei.FullPath);
+                var fsi = new Alphaleonis.Win32.Filesystem.FileInfo(fsei.FullPath);
                 var ads = fsi.EnumerateAlternateDataStreams().Where(t => t.StreamName.Length > 0).ToList();
                 if (ads.Count > 0)
                 {
@@ -408,7 +449,7 @@ internal class Program
                     {
                         Log.Information("Name: {StreamName}",alternateDataStreamInfo.StreamName);
 
-                        var s = File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
+                        var s = Alphaleonis.Win32.Filesystem.File.Open(alternateDataStreamInfo.FullPath, FileMode.Open, FileAccess.Read,
                             FileShare.Read, Alphaleonis.Win32.Filesystem.PathFormat.LongFullPath);
 
                         IPrefetch pf1 = null;
@@ -454,7 +495,7 @@ internal class Program
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.BasicSearch;
 
         files2 =
-            Directory.EnumerateFileSystemEntries(d, dirEnumOptions, enumerationFilters);
+            Alphaleonis.Win32.Filesystem.Directory.EnumerateFileSystemEntries(d, dirEnumOptions, enumerationFilters);
         
 #else
             
@@ -487,9 +528,9 @@ internal class Program
 
                         Log.Information("Searching {Target} for prefetch files...",$"VSS{target.Replace($"{VssDir}\\", "")}");
 
-#if !NET6_0 && !NET9_0
+#if !NET9_0_OR_GREATER
                     files2 =
-                        Directory.EnumerateFileSystemEntries(target, dirEnumOptions, enumerationFilters);
+                        Alphaleonis.Win32.Filesystem.Directory.EnumerateFileSystemEntries(target, dirEnumOptions, enumerationFilters);
 
 #else
 
@@ -903,8 +944,8 @@ internal class Program
                     Directory.Delete(directory);
                 }
 
-#if !NET6_0 && !NET9_0
-                Directory.Delete(VssDir, true, true);
+#if !NET9_0_OR_GREATER
+                Alphaleonis.Win32.Filesystem.Directory.Delete(VssDir, true, true);
 #else
                 Directory.Delete(VssDir, true);
 #endif
@@ -1335,6 +1376,25 @@ internal class Program
         public string Directories { get; set; }
         public string FilesLoaded { get; set; }
         public bool ParsingError { get; set; }
+    }
+    
+    private class CustomHelpAction : SynchronousCommandLineAction
+    {
+        private readonly HelpAction _defaultHelp;
+
+        public CustomHelpAction(HelpAction action)
+        {
+            _defaultHelp = action;
+        }
+
+        public override int Invoke(ParseResult parseResult)
+        {
+            var result = _defaultHelp.Invoke(parseResult);
+
+            Log.Warning("{Msg}", string.Join(" ",parseResult.Tokens));
+
+            return result;
+        }
     }
 }
 
