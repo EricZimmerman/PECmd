@@ -149,7 +149,7 @@ internal class Program
 
         var dtOpt = new Option<string>(
             "--dt"){
-            Description =        "The custom date/time format to use when displaying time stamps. See https://goo.gl/CNVq0k for options. Default is: yyyy-MM-dd HH:mm:ss",
+            Description =        "The custom date/time format to use when displaying time stamps. See https://goo.gl/CNVq0k for options",
             DefaultValueFactory = _ => "yyyy-MM-dd HH:mm:ss"
         };
         
@@ -197,7 +197,7 @@ internal class Program
           mpOpt,
           vssOpt,
           dedupeOpt,
-          dedupeOpt,
+          debugOpt,
           traceOpt
           
         };
