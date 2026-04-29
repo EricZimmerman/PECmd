@@ -205,7 +205,7 @@ internal class Program
         _rootCommand.Description = Header + "\r\n\r\n" + Footer;
 
         _rootCommand.SetAction(result => DoWork(result.GetValue(fOpt), result.GetValue(dOpt), result.GetValue(kOpt),
-            result.GetValue(oOpt), result.GetValue(qOpt), result.GetValue(jsonfOpt), result.GetValue(jsonfOpt),
+            result.GetValue(oOpt), result.GetValue(qOpt), result.GetValue(jsonOpt), result.GetValue(jsonfOpt),
             result.GetValue(csvOpt),result.GetValue(csvfOpt),result.GetValue(htmlOpt),result.GetValue(dtOpt),result.GetValue(mpOpt),result.GetValue(vssOpt),result.GetValue(dedupeOpt),result.GetValue(debugOpt),result.GetValue(traceOpt)));
 
         var foo = _rootCommand.Parse(args).InvokeAsync();
