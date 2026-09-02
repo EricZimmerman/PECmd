@@ -23,6 +23,7 @@
      
              vss             Process all Volume Shadow Copies that exist on drive specified by -f or -d . Default is FALSE
              dedupe          Deduplicate -f or -d & VSCs based on SHA-1. First file found wins. Default is TRUE
+             ads             Scan alternate data streams of every file under -d (or the -f file) and parse any prefetch data hidden in them. Default is FALSE
 
              debug           Show debug information during processing
              trace           Show trace information during processing
@@ -32,8 +33,28 @@
                PECmd.exe -d "C:\Temp" -k "system32, fonts"
                PECmd.exe -d "C:\Temp" --csv "c:\temp" --csvf foo.csv --json c:\temp\json
                PECmd.exe -d "C:\Windows\Prefetch"
+               PECmd.exe -d "C:\Windows\Prefetch" --ads --csv "c:\temp"
 
                Short options (single letter) are prefixed with a single dash. Long commands are prefixed with two dashes
+
+## Alternate Data Stream (ADS) scanning
+
+Use `--ads` to scan the NTFS alternate data streams of files for prefetch data hidden inside them.
+
+When an executable is run from an alternate data stream (for example `notepad.exe` stored as `host.txt:np.exe`), Windows records a prefetch entry whose carrier file has an empty primary stream and the real prefetch tucked into an ADS, e.g. `C:\Windows\Prefetch\HOST.TXT:NP.EXE-F3E0231A.pf`. A normal prefetch scan never looks inside streams, so these are missed. `--ads` finds and parses them.
+
+Behavior:
+
+- `--ads` is opt-in and off by default; without it, PECmd behaves exactly as before.
+- With `-d`, every file under the directory is checked (not just `.pf` files), and any stream that parses as a valid prefetch is reported.
+- With `-f`, the given file's own alternate data streams are scanned.
+- Detection is content based: each stream is parsed as prefetch, so a hidden prefetch is found regardless of the stream's name. Streams that are not prefetch (such as `Zone.Identifier`) are ignored.
+- Prefetch recovered from a stream is flagged in the CSV `Note` column as `Prefetch found in ADS`.
+- An alternate data stream has no timestamps of its own, so the source Created/Modified/Accessed values shown for an ADS-hosted prefetch are those of the carrier (host) file, which the stream inherits.
+
+Example:
+
+    PECmd.exe -d "C:\Windows\Prefetch" --ads --csv "c:\temp"
 
 ## Documentation
 
