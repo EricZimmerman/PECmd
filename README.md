@@ -28,7 +28,7 @@
              trace           Show trace information during processing
      
      Examples: PECmd.exe -f "C:\Temp\CALC.EXE-3FBEF7FD.pf"
-               PECmd.exe -f "C:\Temp\CALC.EXE-3FBEF7FD.pf" --json "D:\jsonOutput" --jsonpretty
+               PECmd.exe -f "C:\Temp\CALC.EXE-3FBEF7FD.pf" --json "D:\jsonOutput"
                PECmd.exe -d "C:\Temp" -k "system32, fonts"
                PECmd.exe -d "C:\Temp" --csv "c:\temp" --csvf foo.csv --json c:\temp\json
                PECmd.exe -d "C:\Windows\Prefetch"
