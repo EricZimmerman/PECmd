@@ -59,7 +59,7 @@ Example:
 
 ## Linux and macOS
 
-The .NET 9 build runs on Linux and macOS and parses every prefetch version, including compressed Windows 10/11 files. `--vss` and `--ads` need Windows and are disabled with a warning on other platforms.
+The .NET 10 build runs on Linux and macOS and parses every prefetch version, including compressed Windows 10/11 files. `--vss` and `--ads` need Windows and are disabled with a warning on other platforms.
 
 ## Documentation
 
