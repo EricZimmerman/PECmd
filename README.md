@@ -1,4 +1,4 @@
-# PECmd
+﻿# PECmd
 
 ## Command Line Interface
 
@@ -57,8 +57,6 @@ Example:
     PECmd.exe -d "C:\Windows\Prefetch" --ads --csv "c:\temp"
 
 ## Documentation
-
-If you are running less than Windows 8 you will NOT be able to process Windows 10 prefetch files.
 
 [Windows Prefetch parser in C#](https://binaryforay.blogspot.com/2016/01/windows-prefetch-parser-in-c.html)
 [Introducing PECmd!](https://binaryforay.blogspot.com/2016/01/introducing-pecmd.html)

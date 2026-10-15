@@ -1,8 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using Prefetch;
-using PrefetchVersion = Prefetch.Version;
 
 namespace PECmd;
 
@@ -11,17 +9,11 @@ internal static class ExecutablePathResolver
     public static ExecutablePathResult Resolve(IPrefetch prefetch)
     {
         if (prefetch?.Header == null ||
-            string.IsNullOrWhiteSpace(prefetch.Header.ExecutableFilename) ||
-            prefetch.Filenames == null)
+            string.IsNullOrWhiteSpace(prefetch.Header.ExecutableFilename))
         {
             return ExecutablePathResult.NotFound;
         }
 
-        var hasExpectedHash = uint.TryParse(
-            prefetch.Header.Hash,
-            System.Globalization.NumberStyles.AllowHexSpecifier,
-            System.Globalization.CultureInfo.InvariantCulture,
-            out var expectedHash);
         var candidatesByPriority = new[]
         {
             new List<string>(),
@@ -51,17 +43,13 @@ internal static class ExecutablePathResolver
             return ExecutablePathResult.NotFound;
         }
 
-        if (hasExpectedHash)
+        foreach (var candidate in preferredCandidates)
         {
-            foreach (var candidate in preferredCandidates)
+            foreach (var hashPath in GetHashPaths(candidate))
             {
-                foreach (var hashPath in GetHashPaths(candidate))
+                if (PrefetchHash.Calculate(hashPath, prefetch.Header.Version) == prefetch.Header.HashValue)
                 {
-                    var calculatedHash = CalculateHash(hashPath, prefetch.Header.Version);
-                    if (calculatedHash == expectedHash)
-                    {
-                        return new ExecutablePathResult(candidate, true);
-                    }
+                    return new ExecutablePathResult(candidate, true);
                 }
             }
         }
@@ -132,54 +120,6 @@ internal static class ExecutablePathResolver
         {
             yield return $@"\DEVICE\HARDDISKVOLUME{volumeNumber}{pathWithoutVolume}";
         }
-    }
-
-    private static uint CalculateHash(string path, PrefetchVersion version)
-    {
-        var pathBytes = Encoding.Unicode.GetBytes(path.ToUpperInvariant());
-
-        return version == PrefetchVersion.WinXpOrWin2K3
-            ? CalculateXpHash(pathBytes)
-            : CalculateVistaOrNewerHash(pathBytes);
-    }
-
-    private static uint CalculateXpHash(IEnumerable<byte> pathBytes)
-    {
-        uint hash = 0;
-
-        unchecked
-        {
-            foreach (var value in pathBytes)
-            {
-                hash = hash * 37 + value;
-            }
-
-            hash *= 314159269;
-
-            if (hash > 0x80000000)
-            {
-                hash = 0 - hash;
-            }
-
-            hash %= 1000000007;
-        }
-
-        return hash;
-    }
-
-    private static uint CalculateVistaOrNewerHash(IEnumerable<byte> pathBytes)
-    {
-        uint hash = 314159;
-
-        unchecked
-        {
-            foreach (var value in pathBytes)
-            {
-                hash = hash * 37 + value;
-            }
-        }
-
-        return hash;
     }
 }
 

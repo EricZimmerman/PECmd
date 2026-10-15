@@ -866,7 +866,9 @@ internal class Program
                                 {
                                     SourceFilename = processedFile.SourceFilename,
                                     RunTime = dateTimeOffset.ToString(ActiveDateTimeFormat),
-                                    ExecutableName = csvOut.FullPath,
+                                    ExecutableName = csvOut.FullPath.IsNullOrEmpty()
+                                        ? processedFile.Header.ExecutableFilename
+                                        : csvOut.FullPath,
                                     PathValidated = csvOut.PathValidated
                                 };
 
@@ -1206,6 +1208,10 @@ internal class Program
         {
             _failedFiles.Add($"{pf.SourceFilename} is corrupt and did not parse completely!");
             Log.Warning("{SourceFilename} FILE DID NOT PARSE COMPLETELY!",pf.SourceFilename);
+            foreach (var parseError in pf.ParseErrors)
+            {
+                Log.Warning("  {ParseError}",parseError);
+            }
             Console.WriteLine();
         }
 
@@ -1420,13 +1426,6 @@ internal class Program
             Log.Information("---------- Processed {PfName} in {TotalSeconds:N8} seconds ----------",pfname,sw.Elapsed.TotalSeconds);
 
             return pf;
-        }
-        catch (ArgumentNullException an)
-        {
-            Log.Error("Error opening {Pfname}. This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files",pfname);
-            Console.WriteLine();
-            _failedFiles.Add(
-                $"{pfname} ==> ({an.Message} (This appears to be a Windows 10 prefetch file. You must be running Windows 8 or higher to decompress Windows 10 prefetch files))");
         }
         catch (Exception ex)
         {
