@@ -799,19 +799,13 @@ internal class Program
                         {
                             foreach (var dateTimeOffset in processedFile.LastRunTimes)
                             {
-                                var t = new CsvOutTl();
-
-                                var exePath =
-                                    processedFile.Filenames.FirstOrDefault(
-                                        y => y.EndsWith(processedFile.Header.ExecutableFilename));
-
-                                if (exePath == null)
+                                var t = new CsvOutTl
                                 {
-                                    exePath = processedFile.Header.ExecutableFilename;
-                                }
-
-                                t.ExecutableName = exePath;
-                                t.RunTime = dateTimeOffset.ToString(ActiveDateTimeFormat);
+                                    SourceFilename = processedFile.SourceFilename,
+                                    RunTime = dateTimeOffset.ToString(ActiveDateTimeFormat),
+                                    ExecutableName = csvOut.FullPath,
+                                    PathValidated = csvOut.PathValidated
+                                };
 
                                 csvTl?.WriteRecord(t);
                                 csvTl?.NextRecord();
@@ -865,6 +859,9 @@ internal class Program
                             "Note: The name of the executable tracked by the pf file");
                         xml?.WriteString(csvOut.ExecutableName);
                         xml?.WriteEndElement();
+
+                        xml?.WriteElementString("FullPath", csvOut.FullPath);
+                        xml?.WriteElementString("PathValidated", csvOut.PathValidated.ToString());
 
                         xml?.WriteElementString("RunCount", $"{csvOut.RunCount}");
 
@@ -1007,6 +1004,10 @@ internal class Program
             LastRun = lrTime,
             ParsingError = pf.ParsingError
         };
+
+        var executablePath = ExecutablePathResolver.Resolve(pf);
+        csOut.FullPath = executablePath.FullPath;
+        csOut.PathValidated = executablePath.PathValidated;
 
         if (pf.LastRunTimes.Count > 1)
         {
@@ -1341,6 +1342,8 @@ internal class Program
     {
         public string RunTime { get; set; }
         public string ExecutableName { get; set; }
+        public string SourceFilename { get; set; }
+        public bool PathValidated { get; set; }
     }
 
     public sealed class CsvOut
@@ -1351,6 +1354,8 @@ internal class Program
         public string SourceModified { get; set; }
         public string SourceAccessed { get; set; }
         public string ExecutableName { get; set; }
+        public string FullPath { get; set; }
+        public bool PathValidated { get; set; }
         public string Hash { get; set; }
         public string Size { get; set; }
         public string Version { get; set; }
@@ -1397,4 +1402,3 @@ internal class Program
         }
     }
 }
-
