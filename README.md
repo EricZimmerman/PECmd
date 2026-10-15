@@ -46,6 +46,7 @@ When an executable is run from an alternate data stream (for example `notepad.ex
 Behavior:
 
 - `--ads` is opt-in and off by default; without it, PECmd behaves exactly as before.
+- `--ads` needs Windows (NTFS alternate data streams); it is disabled with a warning on other platforms.
 - With `-d`, every file under the directory is checked (not just `.pf` files), and any stream that parses as a valid prefetch is reported.
 - With `-f`, the given file's own alternate data streams are scanned.
 - Detection is content based: each stream is parsed as prefetch, so a hidden prefetch is found regardless of the stream's name. Streams that are not prefetch (such as `Zone.Identifier`) are ignored.
@@ -55,6 +56,10 @@ Behavior:
 Example:
 
     PECmd.exe -d "C:\Windows\Prefetch" --ads --csv "c:\temp"
+
+## Linux and macOS
+
+The .NET 9 build runs on Linux and macOS and parses every prefetch version, including compressed Windows 10/11 files. `--vss` and `--ads` need Windows and are disabled with a warning on other platforms.
 
 ## Documentation
 

@@ -256,15 +256,6 @@ internal class Program
       
         Log.Logger = conf.CreateLogger();
         
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            Console.WriteLine();
-            Log.Fatal("Non-Windows platforms not supported due to the need to load decompression specific Windows libraries! Exiting...");
-            Console.WriteLine();
-            Environment.Exit(0);
-            return;
-        }
-        
         if (f.IsNullOrEmpty() && d.IsNullOrEmpty())
         {
             var aaa = new CustomHelpAction(new HelpAction());
@@ -309,12 +300,18 @@ internal class Program
             Log.Information("Warning: Administrator privileges not found!");
         }
       
-        if (vss & (IsAdministrator() == false))
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (vss)
             {
                 vss = false;
                 Log.Warning("--vss is not supported on non-Windows platforms. Disabling...");
+            }
+
+            if (ads)
+            {
+                ads = false;
+                Log.Warning("--ads is not supported on non-Windows platforms. Disabling...");
             }
         }
 
@@ -800,7 +797,7 @@ internal class Program
                     }
 
                     var outDir = Path.Combine(html,
-                        $"{DateTimeOffset.UtcNow:yyyyMMddHHmmss}_PECmd_Output_for_{html.Replace(@":\", "_").Replace(@"\", "_")}");
+                        $"{DateTimeOffset.UtcNow:yyyyMMddHHmmss}_PECmd_Output_for_{html.Replace(@":\", "_").Replace(@"\", "_").Replace("/", "_")}");
 
                     if (Directory.Exists(outDir) == false)
                     {
