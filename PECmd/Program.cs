@@ -83,8 +83,38 @@ internal class Program
         return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 
+    // JSON time stamps: ISO 8601 in UTC (2024-01-02T03:04:05.6780000Z), as JLECmd writes them, instead of ServiceStack's \/Date(ms)\/
+    private const string JsonDateFormat = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
+
+    private static void ConfigureJsonDates()
+    {
+        JsConfig.DateHandler = DateHandler.ISO8601;
+        JsConfig<DateTimeOffset>.SerializeFn = JsonDate;
+        JsConfig<DateTimeOffset?>.SerializeFn = d => d.HasValue ? JsonDate(d.Value) : null;
+        JsConfig<DateTime>.SerializeFn = JsonDate;
+        JsConfig<DateTime?>.SerializeFn = d => d.HasValue ? JsonDate(d.Value) : null;
+    }
+
+    private static string JsonDate(DateTimeOffset d)
+    {
+        return d.UtcDateTime.ToString(JsonDateFormat, CultureInfo.InvariantCulture);
+    }
+
+    private static string JsonDate(DateTime d)
+    {
+        //timestamps without a kind are already UTC; ToUniversalTime would treat them as local time
+        if (d.Kind == DateTimeKind.Unspecified)
+        {
+            d = DateTime.SpecifyKind(d, DateTimeKind.Utc);
+        }
+
+        return d.ToUniversalTime().ToString(JsonDateFormat, CultureInfo.InvariantCulture);
+    }
+
     private static async Task Main(string[] args)
     {
+        ConfigureJsonDates();
+
         ExceptionlessClient.Default.Startup("x3MPpeQSBUUsXl3DjekRQ9kYjyN3cr5JuwdoOBpZ");
 
         _keywords = new HashSet<string> { "temp", "tmp" };
@@ -705,8 +735,6 @@ internal class Program
                 CsvWriter csvTl = null;
                 StreamWriter streamWriterTl = null;
 
-                JsConfig.DateHandler = DateHandler.ISO8601;
-
                 StreamWriter streamWriterJson = null;
 
                 var utcNow = DateTimeOffset.UtcNow;
@@ -731,7 +759,6 @@ internal class Program
                     Log.Information("Saving json output to {OutFile}",outFile);
 
                     streamWriterJson = new StreamWriter(outFile);
-                    JsConfig.DateHandler = DateHandler.ISO8601;
                 }
 
                 if (csv?.Length > 0)
@@ -892,7 +919,7 @@ internal class Program
                         //hack
                         if (streamWriterJson != null)
                         {
-                            var o1 = GetCsvFormat(processedFile, "o");
+                            var o1 = GetCsvFormat(processedFile, JsonDateFormat);
 
                             streamWriterJson.WriteLine(o1.ToJson());
                             
@@ -1061,7 +1088,7 @@ internal class Program
         {
             var vol0Create = pf.VolumeInformation[0].CreationTime;
 
-            volDate = vol0Create.ToString(ActiveDateTimeFormat);
+            volDate = vol0Create.ToString(dt);
 
             if (vol0Create.Year == 1601)
             {
@@ -1078,16 +1105,16 @@ internal class Program
         {
             var lr = pf.LastRunTimes[0];
 
-            lrTime = lr.ToString(ActiveDateTimeFormat);
+            lrTime = lr.ToString(dt);
         }
 
 
         var csOut = new CsvOut
         {
             SourceFilename = pf.SourceFilename,
-            SourceCreated = created.ToString(ActiveDateTimeFormat),
-            SourceModified = modified.ToString(ActiveDateTimeFormat),
-            SourceAccessed = accessed.ToString(ActiveDateTimeFormat),
+            SourceCreated = created.ToString(dt),
+            SourceModified = modified.ToString(dt),
+            SourceAccessed = accessed.ToString(dt),
             Hash = pf.Header.Hash,
             ExecutableName = pf.Header.ExecutableFilename,
             Size = pf.Header.FileSize.ToString(),
@@ -1107,49 +1134,49 @@ internal class Program
         if (pf.LastRunTimes.Count > 1)
         {
             var lrt = pf.LastRunTimes[1];
-            csOut.PreviousRun0 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun0 = lrt.ToString(dt);
         }
 
         if (pf.LastRunTimes.Count > 2)
         {
             var lrt = pf.LastRunTimes[2];
-            csOut.PreviousRun1 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun1 = lrt.ToString(dt);
         }
 
         if (pf.LastRunTimes.Count > 3)
         {
             var lrt = pf.LastRunTimes[3];
-            csOut.PreviousRun2 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun2 = lrt.ToString(dt);
         }
 
         if (pf.LastRunTimes.Count > 4)
         {
             var lrt = pf.LastRunTimes[4];
-            csOut.PreviousRun3 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun3 = lrt.ToString(dt);
         }
 
         if (pf.LastRunTimes.Count > 5)
         {
             var lrt = pf.LastRunTimes[5];
-            csOut.PreviousRun4 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun4 = lrt.ToString(dt);
         }
 
         if (pf.LastRunTimes.Count > 6)
         {
             var lrt = pf.LastRunTimes[6];
-            csOut.PreviousRun5 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun5 = lrt.ToString(dt);
         }
 
         if (pf.LastRunTimes.Count > 7)
         {
             var lrt = pf.LastRunTimes[7];
-            csOut.PreviousRun6 = lrt.ToString(ActiveDateTimeFormat);
+            csOut.PreviousRun6 = lrt.ToString(dt);
         }
 
         if (pf.VolumeInformation?.Count > 1)
         {
             var vol1 = pf.VolumeInformation[1].CreationTime;
-            csOut.Volume1Created = vol1.ToString(ActiveDateTimeFormat);
+            csOut.Volume1Created = vol1.ToString(dt);
             csOut.Volume1Name = pf.VolumeInformation[1].DeviceName;
             csOut.Volume1Serial = pf.VolumeInformation[1].SerialNumber;
         }
