@@ -16,7 +16,7 @@
         <ApplicationIcon>PcDesktopConfigure.ico</ApplicationIcon>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="ERZHelpers" Version="2026.5.3" />
+        <PackageReference Include="ERZHelpers" Version="2026.10.0" />
         <PackageReference Include="Prefetch" Version="2026.10.1" />
         <PackageReference Include="System.CommandLine" Version="2.0.7" />
         <PackageReference Include="System.Net.Http" Version="4.3.4" />
