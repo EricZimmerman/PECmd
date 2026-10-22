@@ -422,6 +422,7 @@ internal class Program
                         catch (Exception e)
                         {
                             Log.Error(e,"Unable to save prefetch file. Error: {Message}",e.Message);
+                            exportErrors++;
                         }
                     }
 
@@ -475,11 +476,13 @@ internal class Program
             {
                 Log.Error(ex,
                     "Unable to access {F}. Are you running as an administrator? Error: {Message}",f,ex.Message);
+                _failedFiles.Add($"{f} ==> ({ex.Message})");
             }
             catch (Exception ex)
             {
                 Log.Error(ex,
                     "Error parsing prefetch file {F}. Error: {Message}",f,ex.Message);
+                _failedFiles.Add($"{f} ==> ({ex.Message})");
             }
         }
         else
@@ -1480,6 +1483,9 @@ internal class Program
         var sw = new Stopwatch();
         sw.Start();
 
+        //a file is listed in _failedFiles once, even when DisplayFile throws after a parsing error
+        var listed = false;
+
         try
         {
             
@@ -1488,6 +1494,7 @@ internal class Program
             if (pf.ParsingError)
             {
                 _failedFiles.Add($"{pfname} is corrupt and did not parse completely!");
+                listed = true;
                 Log.Fatal("{Pfname} FILE DID NOT PARSE COMPLETELY!",pfname);
                 Console.WriteLine();
             }
@@ -1506,7 +1513,10 @@ internal class Program
             Log.Error(ex,"Error opening {Pfname}. Message: {Message}",pfname,ex.Message);
             Console.WriteLine();
 
-            _failedFiles.Add($"{pfname} ==> ({ex.Message})");
+            if (listed == false)
+            {
+                _failedFiles.Add($"{pfname} ==> ({ex.Message})");
+            }
         }
 
         return null;
