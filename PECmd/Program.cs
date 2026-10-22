@@ -111,7 +111,7 @@ internal class Program
         return d.ToUniversalTime().ToString(JsonDateFormat, CultureInfo.InvariantCulture);
     }
 
-    private static async Task Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         ConfigureJsonDates();
 
@@ -245,14 +245,19 @@ internal class Program
             result.GetValue(oOpt), result.GetValue(qOpt), result.GetValue(jsonOpt), result.GetValue(jsonfOpt),
             result.GetValue(csvOpt),result.GetValue(csvfOpt),result.GetValue(htmlOpt),result.GetValue(dtOpt),result.GetValue(mpOpt),result.GetValue(vssOpt),result.GetValue(dedupeOpt),result.GetValue(adsOpt),result.GetValue(debugOpt),result.GetValue(traceOpt)));
 
-        var foo = _rootCommand.Parse(args).InvokeAsync();
-        
+        // Exit code: 0 = success, 1 = bad arguments, a fatal error, a file that could not be parsed, or a failed export.
+        var exitCode = await _rootCommand.Parse(args).InvokeAsync();
+
         Log.CloseAndFlush();
+
+        return exitCode;
     }
 
 
-    private static void DoWork(string f, string d, string k, string o, bool q, string json, string jsonf, string csv, string csvf, string html, string dt, bool mp, bool vss, bool dedupe, bool ads, bool debug, bool trace)
+    private static int DoWork(string f, string d, string k, string o, bool q, string json, string jsonf, string csv, string csvf, string html, string dt, bool mp, bool vss, bool dedupe, bool ads, bool debug, bool trace)
     {
+        var exportErrors = 0;
+
         var levelSwitch = new LoggingLevelSwitch();
 
         ActiveDateTimeFormat = dt;
@@ -291,21 +296,21 @@ internal class Program
             var aaa = new CustomHelpAction(new HelpAction());
             aaa.Invoke(_rootCommand.Parse("Either -f or -d is required. Exiting"));
 
-            return;
+            return 1;
         }
 
         if (f.IsNullOrEmpty() == false &&
             !File.Exists(f))
         {
             Log.Warning("File {F} not found. Exiting",f);
-            return;
+            return 1;
         }
 
         if (d.IsNullOrEmpty() == false &&
             !Directory.Exists(d))
         {
             Log.Warning("Directory {D} not found. Exiting",d);
-            return;
+            return 1;
         }
 
         if (k?.Length > 0)
@@ -349,7 +354,7 @@ internal class Program
         {
             Log.Error("--vss is present, but administrator rights not found. Exiting");
             Console.WriteLine();
-            return;
+            return 1;
         }
 
         Console.WriteLine();
@@ -633,13 +638,13 @@ internal class Program
             {
                 Log.Error(ua,
                     "Unable to access {D}. Are you running as an administrator? Error: {Message}",d,ua.Message);
-                return;
+                return 1;
             }
             catch (Exception ex)
             {
                 Log.Error(ex,
                     "Error getting prefetch files in {D}. Error: {Message}",d,ex.Message);
-                return;
+                return 1;
             }
 
             Console.WriteLine();
@@ -809,6 +814,7 @@ internal class Program
                     {
                         Log.Error(ex,
                             "Unable to open {OutFile} for writing. CSV export canceled. Error: {Message}",outFile,ex.Message);
+                        exportErrors++;
                     }
                 }
 
@@ -904,6 +910,7 @@ internal class Program
                         {
                             Log.Error(ex,
                                 "Error getting time line record for {SourceFilename} to {Csv}. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
+                            exportErrors++;
                         }
 
                         try
@@ -914,6 +921,7 @@ internal class Program
                         catch (Exception ex)
                         {
                             Log.Error(ex,"Error writing CSV record for {SourceFilename} to {Csv}. Error: {Message}",processedFile.SourceFilename,csv,ex.Message);
+                            exportErrors++;
                         }
 
                         //hack
@@ -1018,6 +1026,7 @@ internal class Program
             catch (Exception ex)
             {
                 Log.Error(ex,"Error exporting data: {Message}",ex.Message);
+                exportErrors++;
             }
         }
 
@@ -1025,6 +1034,8 @@ internal class Program
         {
             RemoveVssMount();
         }
+
+        return _failedFiles.Count > 0 || exportErrors > 0 ? 1 : 0;
     }
 
     /// <summary>
@@ -1263,7 +1274,7 @@ internal class Program
     {
         if (pf.ParsingError)
         {
-            _failedFiles.Add($"{pf.SourceFilename} is corrupt and did not parse completely!");
+            //LoadFile lists the file in _failedFiles (adding it here too listed it twice and made the processed count negative)
             Log.Warning("{SourceFilename} FILE DID NOT PARSE COMPLETELY!",pf.SourceFilename);
             foreach (var parseError in pf.ParseErrors)
             {
@@ -1296,9 +1307,15 @@ internal class Program
 
             Log.Information("Run count: {RunCount:N0}",pf.RunCount);
 
-            var lastRun = pf.LastRunTimes.First();
-
-            Log.Information("Last run: {LastRun}",lastRun);
+            //a prefetch file that was never run (run count 0) has no last run times
+            if (pf.LastRunTimes.Count > 0)
+            {
+                Log.Information("Last run: {LastRun}",pf.LastRunTimes[0]);
+            }
+            else
+            {
+                Log.Information("Last run: (none)");
+            }
 
             if (pf.LastRunTimes.Count > 1)
             {
