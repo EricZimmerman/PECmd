@@ -50,6 +50,9 @@ internal class Program
 
     private static List<string> _failedFiles;
 
+    //files or folders that could not be opened, read or listed (a damaged file is only listed in _failedFiles)
+    private static int _readErrors;
+
     private static List<IPrefetch> _processedFiles;
 
     private static readonly string Header =
@@ -245,7 +248,8 @@ internal class Program
             result.GetValue(oOpt), result.GetValue(qOpt), result.GetValue(jsonOpt), result.GetValue(jsonfOpt),
             result.GetValue(csvOpt),result.GetValue(csvfOpt),result.GetValue(htmlOpt),result.GetValue(dtOpt),result.GetValue(mpOpt),result.GetValue(vssOpt),result.GetValue(dedupeOpt),result.GetValue(adsOpt),result.GetValue(debugOpt),result.GetValue(traceOpt)));
 
-        // Exit code: 0 = success, 1 = bad arguments, a fatal error, a file that could not be parsed, or a failed export.
+        // Exit code: 0 = the run did its job (damaged files are listed but don't change it); 1 = bad arguments, a missing input,
+        // a file or folder that could not be read or listed, output that could not be written, or a fatal error.
         var exitCode = await _rootCommand.Parse(args).InvokeAsync();
 
         Log.CloseAndFlush();
@@ -383,6 +387,7 @@ internal class Program
         _processedFiles = new List<IPrefetch>();
 
         _failedFiles = new List<string>();
+        _readErrors = 0;
 
         if (f?.Length > 0)
         {
@@ -477,12 +482,15 @@ internal class Program
                 Log.Error(ex,
                     "Unable to access {F}. Are you running as an administrator? Error: {Message}",f,ex.Message);
                 _failedFiles.Add($"{f} ==> ({ex.Message})");
+                _readErrors++;
             }
             catch (Exception ex)
             {
+                //LoadFile handles parsing errors, so what gets here is reading the file, --vss or --ads
                 Log.Error(ex,
                     "Error parsing prefetch file {F}. Error: {Message}",f,ex.Message);
                 _failedFiles.Add($"{f} ==> ({ex.Message})");
+                _readErrors++;
             }
         }
         else
@@ -632,7 +640,7 @@ internal class Program
                             Console.WriteLine();
                             Log.Error("Rerun the program with Administrator privileges to try again");
                             Console.WriteLine();
-                            //Environment.Exit(-1);
+                            _readErrors++;
                         }
                     }
                 }
@@ -1038,7 +1046,8 @@ internal class Program
             RemoveVssMount();
         }
 
-        return _failedFiles.Count > 0 || exportErrors > 0 ? 1 : 0;
+        //damaged files are listed under Failed files but are not a failure of the run
+        return _readErrors > 0 || exportErrors > 0 ? 1 : 0;
     }
 
     /// <summary>
@@ -1517,9 +1526,23 @@ internal class Program
             {
                 _failedFiles.Add($"{pfname} ==> ({ex.Message})");
             }
+
+            if (IsReadError(ex))
+            {
+                _readErrors++;
+            }
         }
 
         return null;
+    }
+
+    /// <summary>
+    ///     True when a file could not be opened or read (access denied, locked, an IO error), as opposed to a file that was
+    ///     read but is damaged
+    /// </summary>
+    private static bool IsReadError(Exception ex)
+    {
+        return ex is UnauthorizedAccessException || (ex is IOException && !(ex is EndOfStreamException));
     }
 
     private static void ScanDirectoryForAds(string dir, bool q)
@@ -1542,6 +1565,7 @@ internal class Program
         catch (Exception e)
         {
             Log.Error(e,"Unable to enumerate files in {Dir} for alternate data stream scanning. Error: {Message}",scanName,e.Message);
+            _readErrors++;
             return;
         }
 
@@ -1587,6 +1611,7 @@ internal class Program
             catch (Exception e)
             {
                 Log.Warning(e,"Unable to open alternate data stream {SourceName}. Error: {Message}",sourceName,e.Message);
+                _readErrors++;
                 continue;
             }
 
