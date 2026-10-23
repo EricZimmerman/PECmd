@@ -22,7 +22,7 @@ dotnet run --project PECmd -f net10.0 -- -d <folder with .pf files> --csv out
 ## CLI
 
 All in `PECmd/Program.cs`.
-- `Main` returns the exit code, 0 or 1 only. 1 is a failure of the tool: invalid arguments, a missing `-f`/`-d`, a file or folder it can't open, read or list (`_readErrors`: access denied, locked, IO errors, VSC/`--ads` listing), or output it can't write (`exportErrors`). Damaged files are listed in `_failedFiles` but exit 0.
+- `Main` returns the exit code, 0 or 1 only. 1 is a failure of the tool: invalid arguments, a missing `-f`/`-d`, a file or folder it can't open, read or list (`_readErrors`: access denied, locked, IO errors, VSC/`--ads` listing, a file `--dedupe` can't hash, a folder under `-d` that can't be read: `ReportUnreadableFolder` logs "Unable to read folder <path>: <reason>" once per folder and the search goes on; net10.0 finds files with `EntryFinder`, net472 with an AlphaFS `ErrorFilter` and without `ContinueOnException`, which stops AlphaFS calling the filter), or output it can't write (`exportErrors`). Damaged files are listed in `_failedFiles` but exit 0.
 - `LoadFile` opens a file and lists it in `_failedFiles` when it throws or `ParsingError` is set; `DisplayFile` (without `-q`) only shows it, with the parse problems. The summary's processed count is the files found minus `_failedFiles`, so a file goes in that list once.
 - A prefetch file can have no last run times (run count 0); don't assume `LastRunTimes` has any.
 - Runs on Linux and macOS too: Windows 10/11 files are decompressed without Windows; `--vss` and `--ads` are Windows only (a warning elsewhere). `#if NET9_0_OR_GREATER` separates the two targets: build both.

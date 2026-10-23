@@ -52,6 +52,7 @@ internal class Program
 
     //files or folders that could not be opened, read or listed (a damaged file is only listed in _failedFiles)
     private static int _readErrors;
+    private static HashSet<string> _unreadableFolders = new(StringComparer.OrdinalIgnoreCase);
 
     private static List<IPrefetch> _processedFiles;
 
@@ -388,6 +389,7 @@ internal class Program
 
         _failedFiles = new List<string>();
         _readErrors = 0;
+        _unreadableFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         if (f?.Length > 0)
         {
@@ -572,11 +574,11 @@ internal class Program
 
         enumerationFilters.RecursionFilter = entryInfo => !entryInfo.IsMountPoint && !entryInfo.IsSymbolicLink;
 
-        enumerationFilters.ErrorFilter = (errorCode, errorMessage, pathProcessed) => true;
+        enumerationFilters.ErrorFilter = UnreadableFolder;
 
         var dirEnumOptions =
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.Files | Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.Recursive |
-            Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.SkipReparsePoints | Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.ContinueOnException |
+            Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.SkipReparsePoints |
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.BasicSearch;
 
         files2 =
@@ -584,15 +586,8 @@ internal class Program
         
 #else
             
-            var options = new EnumerationOptions
-            {
-                IgnoreInaccessible = true,
-                MatchCasing = MatchCasing.CaseInsensitive,
-                RecurseSubdirectories = true,
-                AttributesToSkip = 0
-            };
-
-            files2 = Directory.EnumerateFileSystemEntries(d, "*.pf", options);
+            //folders that can't be read are reported and counted (IgnoreInaccessible skipped them silently)
+            files2 = FindEntries(d, "*.pf", false);
 #endif
 
 
@@ -619,15 +614,7 @@ internal class Program
 
 #else
 
-                        var enumerationOptions = new EnumerationOptions
-                        {
-                            IgnoreInaccessible = true,
-                            MatchCasing = MatchCasing.CaseInsensitive,
-                            RecurseSubdirectories = true,
-                            AttributesToSkip = 0
-                        };
-
-                         files2 = Directory.EnumerateFileSystemEntries(target, "*.pf", enumerationOptions);
+                         files2 = FindEntries(target, "*.pf", false);
 #endif
 
                         try
@@ -678,8 +665,22 @@ internal class Program
 
                 if (dedupe)
                 {
-                    using var fs = new FileStream(file, FileMode.Open, FileAccess.Read);
-                    var sha = Helper.GetSha1FromStream(fs, 0);
+                    string sha;
+                    try
+                    {
+                        using var fs = new FileStream(file, FileMode.Open, FileAccess.Read);
+                        sha = Helper.GetSha1FromStream(fs, 0);
+                    }
+                    catch (Exception ex)
+                    {
+                        //a file that can't be read (locked, access denied) is reported and the run goes on; it stopped the run
+                        Log.Error(ex,"Unable to read {File} to check for duplicates. Message: {Message}",file,ex.Message);
+                        Console.WriteLine();
+                        _failedFiles.Add($"{file} ==> ({ex.Message})");
+                        _readErrors++;
+                        continue;
+                    }
+
                     if (seenHashes.Contains(sha))
                     {
                         Log.Debug("Skipping {File} as a file with SHA-1 {Sha} has already been processed",file,sha);
@@ -1672,29 +1673,119 @@ internal class Program
         {
             InclusionFilter = _ => true,
             RecursionFilter = entryInfo => !entryInfo.IsMountPoint && !entryInfo.IsSymbolicLink,
-            ErrorFilter = (errorCode, errorMessage, pathProcessed) => true
+            ErrorFilter = UnreadableFolder
         };
 
         var options =
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.Files |
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.Recursive |
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.SkipReparsePoints |
-            Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.ContinueOnException |
             Alphaleonis.Win32.Filesystem.DirectoryEnumerationOptions.BasicSearch;
 
         return Alphaleonis.Win32.Filesystem.Directory.EnumerateFileSystemEntries(dir, options, filters);
 #else
-        var options = new EnumerationOptions
-        {
-            IgnoreInaccessible = true,
-            MatchCasing = MatchCasing.CaseInsensitive,
-            RecurseSubdirectories = true,
-            AttributesToSkip = 0
-        };
-
-        return Directory.EnumerateFiles(dir, "*", options);
+        return FindEntries(dir, "*", true);
 #endif
     }
+
+#if !NET9_0_OR_GREATER
+    /// <summary>
+    ///     AlphaFS ErrorFilter: a folder that can't be read is reported and counted as a read error (exit 1 at the end), and
+    ///     the search goes on (it was skipped silently).
+    ///     The options leave out ContinueOnException: with it, AlphaFS never calls ErrorFilter
+    /// </summary>
+    private static bool UnreadableFolder(int errorCode, string errorMessage, string pathProcessed)
+    {
+        ReportUnreadableFolder(pathProcessed, errorMessage);
+        return true;
+    }
+#endif
+
+    /// <summary>
+    ///     A folder that can't be read is reported once (--ads searches -d again) and counted as a read error (exit 1 at the
+    ///     end)
+    /// </summary>
+    private static void ReportUnreadableFolder(string folder, string reason)
+    {
+        if (_unreadableFolders.Add(folder) == false)
+        {
+            return;
+        }
+
+        Log.Error("Unable to read folder {Folder}: {Reason}",folder,reason);
+        _readErrors++;
+    }
+
+#if NET9_0_OR_GREATER
+    /// <summary>
+    ///     Entries under a folder, recursively, matching a pattern (case-insensitive), as Directory.EnumerateFileSystemEntries
+    ///     (or EnumerateFiles) did with IgnoreInaccessible. Folders that can't be read are skipped and kept in Unreadable
+    ///     (IgnoreInaccessible skipped them silently)
+    /// </summary>
+    private sealed class EntryFinder : System.IO.Enumeration.FileSystemEnumerator<string>
+    {
+        private readonly string _pattern;
+        private readonly bool _filesOnly;
+
+        //the subfolder whose handle is opened right after ShouldRecurseIntoEntry; an error then is about that folder
+        private string _lastRecursed;
+
+        //folder (null: the folder searched, as the base constructor can report it before this one runs) and reason
+        public readonly List<(string Folder, string Reason)> Unreadable = new();
+
+        public EntryFinder(string directory, string pattern, bool filesOnly) : base(directory,
+            new EnumerationOptions { IgnoreInaccessible = false, RecurseSubdirectories = true, AttributesToSkip = 0 })
+        {
+            _pattern = pattern;
+            _filesOnly = filesOnly;
+        }
+
+        protected override bool ShouldRecurseIntoEntry(ref System.IO.Enumeration.FileSystemEntry entry)
+        {
+            _lastRecursed = entry.ToSpecifiedFullPath();
+            return true;
+        }
+
+        protected override bool ShouldIncludeEntry(ref System.IO.Enumeration.FileSystemEntry entry)
+        {
+            _lastRecursed = null;
+            return (_filesOnly == false || entry.IsDirectory == false) &&
+                   System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(_pattern, entry.FileName, true);
+        }
+
+        protected override string TransformEntry(ref System.IO.Enumeration.FileSystemEntry entry)
+        {
+            return entry.ToSpecifiedFullPath();
+        }
+
+        protected override bool ContinueOnError(int error)
+        {
+            Unreadable.Add((_lastRecursed, new Win32Exception(error).Message));
+            _lastRecursed = null;
+            return true;
+        }
+    }
+
+    /// <summary>
+    ///     The entries found; each folder that can't be read is reported and counted as a read error (exit 1 at the end)
+    /// </summary>
+    private static List<string> FindEntries(string directory, string pattern, bool filesOnly)
+    {
+        using var finder = new EntryFinder(directory, pattern, filesOnly);
+        var entries = new List<string>();
+        while (finder.MoveNext())
+        {
+            entries.Add(finder.Current);
+        }
+
+        foreach (var (folder, reason) in finder.Unreadable)
+        {
+            ReportUnreadableFolder(folder ?? directory, reason);
+        }
+
+        return entries;
+    }
+#endif
 
     private static Stream OpenAdsStream(string streamFullPath)
     {
