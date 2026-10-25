@@ -222,8 +222,8 @@ internal class Program
         };
         var coOpt = new Option<bool>("--co")
         {
-            Description = "Save all console messages to <timestamp>_PECmd_<version>_ConsoleLog.txt in the output directory (the first of --csv, --json, --html given)",
-            DefaultValueFactory = _ => false
+            Description = "When true, save all console messages to <timestamp>_PECmd_<version>_ConsoleLog.txt in the output directory (the first of --csv, --json, --html given). Use --co false to turn it off",
+            DefaultValueFactory = _ => true
         };
 
         _rootCommand = new RootCommand
@@ -352,11 +352,6 @@ internal class Program
         {
             Console.WriteLine();
             Log.Information("Console log: {Path}",consoleLog);
-        }
-        else if (co)
-        {
-            Console.WriteLine();
-            Log.Warning("--co: no output directory was given, so the console messages are not saved");
         }
 
         if (IsAdministrator() == false)

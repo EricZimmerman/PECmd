@@ -27,7 +27,7 @@ All in `PECmd/Program.cs`.
 - A prefetch file can have no last run times (run count 0); don't assume `LastRunTimes` has any.
 - Runs on Linux and macOS too: Windows 10/11 files are decompressed without Windows; `--vss` and `--ads` are Windows only (a warning elsewhere). `#if NET9_0_OR_GREATER` separates the two targets: build both.
 - CSV columns: keep the existing ones in order and add new ones at the end.
-- `--co` (Issues #259, all CLI tools, opt-in): `ConsoleLog.cs` adds a Serilog file sink, `<yyyyMMddHHmmss>_PECmd_<version>_ConsoleLog.txt` in the first of `--csv`, `--json`, `--html`, with the same `utcNow` as the output names (set before the logger), template `[HH:mm:ss.fff LVL] {Message:l}` (not `:lj`: with `:j` the file sink quotes dates and enums), same formatter and level switch as the console. `DateTimeOffsetFormatter` uses an explicit format when one is given (the templates' `{Timestamp:HH:mm:ss.fff}`) and `--dt` otherwise. Check: with `--debug` the log equals the console minus blank lines.
+- `--co` (Issues #259, all CLI tools, on by default, `--co false` turns it off): `ConsoleLog.cs` adds a Serilog file sink, `<yyyyMMddHHmmss>_PECmd_<version>_ConsoleLog.txt` in the first of `--csv`, `--json`, `--html`, with the same `utcNow` as the output names (set before the logger), template `[HH:mm:ss.fff LVL] {Message:l}` (not `:lj`: with `:j` the file sink quotes dates and enums), same formatter and level switch as the console. `DateTimeOffsetFormatter` uses an explicit format when one is given (the templates' `{Timestamp:HH:mm:ss.fff}`) and `--dt` otherwise. Check: with `--debug` the log equals the console minus blank lines.
 
 ## Versioning and release
 

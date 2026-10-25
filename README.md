@@ -43,7 +43,7 @@ Options:
   --ads            Scan alternate data streams of every file under -d (or the -f file) and parse any prefetch data found hidden in them
   --debug          Show debug information during processing
   --trace          Show trace information during processing
-  --co             Save all console messages to <timestamp>_PECmd_<version>_ConsoleLog.txt in the output directory (the first of --csv, --json, --html given)
+  --co             When true, save all console messages to <timestamp>_PECmd_<version>_ConsoleLog.txt in the output directory (the first of --csv, --json, --html given). Use --co false to turn it off
   -?, -h, --help   Show help and usage information
   --version        Show version information
 ```
@@ -72,7 +72,7 @@ PECmd.exe -d "C:\Windows\Prefetch"
   (`2024-01-02T03:04:05.6780000Z`) with their full precision.
 - **HTML** (`--html`): one folder with an `index.xhtml`.
 - **Raw bytes** (`-o`): the prefetch file's bytes, decompressed for Windows 10/11 files.
-- **Console log** (`--co`): everything shown on the console, with times and levels, in
+- **Console log** (`--co`, on by default; `--co false` turns it off): everything shown on the console, with times and levels, in
   `<timestamp>_PECmd_<version>_ConsoleLog.txt` in the first of the `--csv`, `--json` and `--html` directories given.
 
 A prefetch file with no last run times (run count 0) shows "Last run: (none)". A file that doesn't parse completely is
@@ -124,7 +124,7 @@ The .NET 10 build runs on Linux and macOS and parses every prefetch version, inc
   the first entry) and 48 bit MFT entry numbers.
 - `--vss` works again, and removes only its own VSC links from `C:\___vssMount` when it finishes.
 - Exit code 1 when the tool fails (it was always 0). Error reports include source file and line numbers.
-- New `--co`: saves all console messages to `<timestamp>_PECmd_<version>_ConsoleLog.txt` in the output directory
+- New `--co` (on by default; `--co false` turns it off): saves all console messages to `<timestamp>_PECmd_<version>_ConsoleLog.txt` in the output directory
   (Issues #259). --debug and --trace show the time of each message again (they showed the --dt date) (2026.10.3)
 
 The full list is in the [ChangeLog](https://ericzimmerman.github.io/changelog/).
