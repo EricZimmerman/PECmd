@@ -125,7 +125,7 @@ The .NET 10 build runs on Linux and macOS and parses every prefetch version, inc
 - `--vss` works again, and removes only its own VSC links from `C:\___vssMount` when it finishes.
 - Exit code 1 when the tool fails (it was always 0). Error reports include source file and line numbers.
 - New `--co`: saves all console messages to `<timestamp>_PECmd_<version>_ConsoleLog.txt` in the output directory
-  (Issues #259) (2026.10.3)
+  (Issues #259). --debug and --trace show the time of each message again (they showed the --dt date) (2026.10.3)
 
 The full list is in the [ChangeLog](https://ericzimmerman.github.io/changelog/).
 

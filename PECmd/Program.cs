@@ -305,7 +305,7 @@ internal class Program
         var consoleLog = co ? ConsoleLog.GetPath(utcNow, csv, json, html) : null;
         if (consoleLog != null)
         {
-            conf.WriteTo.File(consoleLog, outputTemplate: ConsoleLog.Template, formatProvider: ConsoleLog.Formatter(formatter));
+            conf.WriteTo.File(consoleLog, outputTemplate: ConsoleLog.Template, formatProvider: formatter);
         }
 
         Log.Logger = conf.CreateLogger();
@@ -1485,7 +1485,8 @@ internal class Program
             if (arg is DateTimeOffset)
             {
                 var size = (DateTimeOffset)arg;
-                return size.ToString(ActiveDateTimeFormat);
+                //an explicit format (the log templates' {Timestamp:HH:mm:ss.fff}) wins over --dt
+                return size.ToString(string.IsNullOrEmpty(format) ? ActiveDateTimeFormat : format);
             }
 
             var formattable = arg as IFormattable;
