@@ -9,7 +9,7 @@
         <Description>Prefetch Explorer Command Line Edition</Description>
         <Copyright>Eric R. Zimmerman 2027</Copyright>
         <LangVersion>10</LangVersion>
-        <Version>2026.10.2</Version>
+        <Version>2026.10.3</Version>
         <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     </PropertyGroup>
     <PropertyGroup>
@@ -38,6 +38,7 @@
         </PackageReference>
         <PackageReference Include="Serilog" Version="4.4.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Include="ServiceStack.Text" Version="10.0.6" />
     </ItemGroup>
 </Project>

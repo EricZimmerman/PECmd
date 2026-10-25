@@ -220,6 +220,11 @@ internal class Program
             Description = "Show trace information during processing",
             DefaultValueFactory = _ => false
         };
+        var coOpt = new Option<bool>("--co")
+        {
+            Description = "Save all console messages to <timestamp>_PECmd_<version>_ConsoleLog.txt in the output directory (the first of --csv, --json, --html given)",
+            DefaultValueFactory = _ => false
+        };
 
         _rootCommand = new RootCommand
         {
@@ -239,15 +244,15 @@ internal class Program
           dedupeOpt,
           adsOpt,
           debugOpt,
-          traceOpt
-
+          traceOpt,
+          coOpt
         };
 
         _rootCommand.Description = Header + "\r\n\r\n" + Footer;
 
         _rootCommand.SetAction(result => DoWork(result.GetValue(fOpt), result.GetValue(dOpt), result.GetValue(kOpt),
             result.GetValue(oOpt), result.GetValue(qOpt), result.GetValue(jsonOpt), result.GetValue(jsonfOpt),
-            result.GetValue(csvOpt),result.GetValue(csvfOpt),result.GetValue(htmlOpt),result.GetValue(dtOpt),result.GetValue(mpOpt),result.GetValue(vssOpt),result.GetValue(dedupeOpt),result.GetValue(adsOpt),result.GetValue(debugOpt),result.GetValue(traceOpt)));
+            result.GetValue(csvOpt),result.GetValue(csvfOpt),result.GetValue(htmlOpt),result.GetValue(dtOpt),result.GetValue(mpOpt),result.GetValue(vssOpt),result.GetValue(dedupeOpt),result.GetValue(adsOpt),result.GetValue(debugOpt),result.GetValue(traceOpt),result.GetValue(coOpt)));
 
         // Exit code: 0 = the run did its job (damaged files are listed but don't change it); 1 = bad arguments, a missing input,
         // a file or folder that could not be read or listed, output that could not be written, or a fatal error.
@@ -259,7 +264,7 @@ internal class Program
     }
 
 
-    private static int DoWork(string f, string d, string k, string o, bool q, string json, string jsonf, string csv, string csvf, string html, string dt, bool mp, bool vss, bool dedupe, bool ads, bool debug, bool trace)
+    private static int DoWork(string f, string d, string k, string o, bool q, string json, string jsonf, string csv, string csvf, string html, string dt, bool mp, bool vss, bool dedupe, bool ads, bool debug, bool trace, bool co)
     {
         var exportErrors = 0;
 
@@ -294,6 +299,15 @@ internal class Program
             .WriteTo.Console(outputTemplate: template,formatProvider: formatter)
             .MinimumLevel.ControlledBy(levelSwitch);
       
+        //the time in the output names and the console log's
+        var utcNow = DateTimeOffset.UtcNow;
+
+        var consoleLog = co ? ConsoleLog.GetPath(utcNow, csv, json, html) : null;
+        if (consoleLog != null)
+        {
+            conf.WriteTo.File(consoleLog, outputTemplate: ConsoleLog.Template, formatProvider: ConsoleLog.Formatter(formatter));
+        }
+
         Log.Logger = conf.CreateLogger();
         
         if (f.IsNullOrEmpty() && d.IsNullOrEmpty())
@@ -333,6 +347,17 @@ internal class Program
         Console.WriteLine();
         
         Log.Information("Command line: {Args}",string.Join(" ", Environment.GetCommandLineArgs().Skip(1)));
+
+        if (consoleLog != null)
+        {
+            Console.WriteLine();
+            Log.Information("Console log: {Path}",consoleLog);
+        }
+        else if (co)
+        {
+            Console.WriteLine();
+            Log.Warning("--co: no output directory was given, so the console messages are not saved");
+        }
 
         if (IsAdministrator() == false)
         {
@@ -754,8 +779,6 @@ internal class Program
 
                 StreamWriter streamWriterJson = null;
 
-                var utcNow = DateTimeOffset.UtcNow;
-
                 if (json?.Length > 0)
                 {
                     var outName = $"{utcNow:yyyyMMddHHmmss}_PECmd_Output.json";
@@ -842,7 +865,7 @@ internal class Program
                     }
 
                     var outDir = Path.Combine(html,
-                        $"{DateTimeOffset.UtcNow:yyyyMMddHHmmss}_PECmd_Output_for_{html.Replace(@":\", "_").Replace(@"\", "_").Replace("/", "_")}");
+                        $"{utcNow:yyyyMMddHHmmss}_PECmd_Output_for_{html.Replace(@":\", "_").Replace(@"\", "_").Replace("/", "_")}");
 
                     if (Directory.Exists(outDir) == false)
                     {

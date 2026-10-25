@@ -27,6 +27,7 @@ All in `PECmd/Program.cs`.
 - A prefetch file can have no last run times (run count 0); don't assume `LastRunTimes` has any.
 - Runs on Linux and macOS too: Windows 10/11 files are decompressed without Windows; `--vss` and `--ads` are Windows only (a warning elsewhere). `#if NET9_0_OR_GREATER` separates the two targets: build both.
 - CSV columns: keep the existing ones in order and add new ones at the end.
+- `--co` (Issues #259, all CLI tools, opt-in): `ConsoleLog.cs` adds a Serilog file sink, `<yyyyMMddHHmmss>_PECmd_<version>_ConsoleLog.txt` in the first of `--csv`, `--json`, `--html`, with the same `utcNow` as the output names (set before the logger), template `[HH:mm:ss.fff LVL] {Message:l}` (not `:lj`: the file sink writes dates as JSON with `:j`) and the same level switch. `ConsoleLog.Formatter` wraps `DateTimeOffsetFormatter` so the template's `{Timestamp:HH:mm:ss.fff}` keeps its format. Check: the log minus its `[time LVL] ` prefixes equals the console minus blank lines.
 
 ## Versioning and release
 
